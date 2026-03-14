@@ -403,7 +403,7 @@ function fbListen() {
   if (savedUser && players.find(p => p.name === savedUser)) {
     currentUser = savedUser;
     document.getElementById('welcomeScreen').style.display = 'none';
-    document.getElementById('headerYou').textContent = '👤 ' + currentUser;
+    // headerYou removed
     renderTracker();
     calcPace();
   } else {
@@ -1477,7 +1477,9 @@ if (typeof Notification !== 'undefined' && Notification.permission === 'granted'
 }
 calcPace();
 
-// Start app immediately, Firebase syncs in background
+// Hide welcome screen and go straight to app
+const ws = document.getElementById('welcomeScreen');
+if (ws) ws.style.display = 'none';
 renderTracker();
 calcPace();
 askForNotifications();

@@ -1382,6 +1382,16 @@ calcPace();
 // Wait for Firebase SDK to be ready before listening
 window.addEventListener('load', function() {
   fbListen();
+  // Fallback — if Firebase hasn't responded in 4 seconds, show welcome anyway
+  setTimeout(function() {
+    if (!fbReady) {
+      fbReady = true;
+      console.warn('Firebase timeout — showing welcome screen');
+      const loading = document.getElementById('welcomeLoading');
+      if (loading) loading.textContent = '⚠️ Offline — progress saved locally';
+      renderWelcome();
+    }
+  }, 4000);
 });
 </script>
 </body>

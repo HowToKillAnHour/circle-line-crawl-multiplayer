@@ -68,7 +68,7 @@
   .circle-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background 0.25s;}
   .pub-row.done .circle-dot{background:var(--yellow);}
   .pub-info{flex:1;min-width:0;}
-  .pub-name{font-size:18px;font-weight:700;line-height:1.2;white-space:normal;word-break:break-word;}
+  .pub-name{font-size:18px;font-weight:700;line-height:1.2;white-space:normal;overflow-wrap:break-word;word-break:normal;}
   .pub-row.done .pub-name{color:var(--yellow);}
   .pub-station{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
   .checkin-avatars{display:flex;gap:3px;margin-top:4px;}
@@ -186,8 +186,7 @@
   @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
   .pub-row.just-done{animation:pop 0.3s ease;}
-  .pub-row.current-stop{border-color:#4a9eff !important;background:#0d1a2e !important;box-shadow:0 0 0 2px rgba(74,158,255,0.2);}
-  .pub-row.current-stop .stop-num{background:#4a9eff;color:#fff;}
+
   .pub-name-row{display:flex;align-items:baseline;gap:8px;}
   .pub-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--yellow);opacity:0.8;font-weight:400;white-space:nowrap;}
   .pub-row.done .pub-time{opacity:0.4;}
@@ -702,7 +701,7 @@ function renderTracker() {
     const globalDone = visited.includes(pub.stop) || visitors.length > 0;
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
-    const isCurrent = adminCurrentStop === pub.stop;
+    const isCurrent = false; // current-stop highlight removed
     row.className = 'pub-row' + (globalDone ? ' done' : '') + (isCurrent ? ' current-stop' : '');
     row.id = 'pub-' + pub.stop;
     const avatars = ''; // removed player avatars
@@ -1114,7 +1113,7 @@ function renderAdminPanel() {
   if (pubList) {
     pubList.innerHTML = '';
     PUBS.forEach(pub => {
-      const isCurrent = adminCurrentStop === pub.stop;
+      const isCurrent = false; // current-stop highlight removed
       const btn = document.createElement('button');
       btn.style.cssText = 'background:' + (isCurrent ? 'rgba(255,211,41,0.15)' : 'var(--card)') + ';border:1px solid ' + (isCurrent ? 'var(--yellow)' : 'var(--border)') + ';border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--text);font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:700;width:100%;text-align:left;gap:8px;';
       btn.innerHTML = '<span>#' + pub.stop + ' ' + pub.name + ' <span style="color:var(--muted);font-weight:400;font-size:12px;">' + pub.station + '</span></span>' + (isCurrent ? '<span style="color:var(--yellow);font-size:12px;white-space:nowrap;">▶ NOW</span>' : '');

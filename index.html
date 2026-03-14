@@ -270,7 +270,7 @@
 
 <div class="panel active" id="panel-tracker" style="padding:0;">
   <!-- Sticky info block -->
-  <div id="trackerSticky" style="position:sticky;top:108px;z-index:98;background:var(--dark);padding:10px 16px 0;border-bottom:1px solid var(--border);">
+  <div id="trackerSticky" style="position:sticky;top:0;z-index:98;background:var(--dark);padding:10px 16px 0;border-bottom:1px solid var(--border);">
     <div id="countdownBanner" style="display:none;background:rgba(255,211,41,0.1);border:1px solid rgba(255,211,41,0.4);border-radius:10px;padding:10px 16px;text-align:center;margin-bottom:8px;">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">LEAVE CURRENT PUB IN</div>
       <div id="countdownTimer" style="font-family:'DM Mono',monospace;font-size:32px;font-weight:700;color:var(--yellow);letter-spacing:3px;line-height:1.1;">--:--</div>
@@ -1339,10 +1339,30 @@ function calcPace() {
   startCountdown(schedule, mpp);
   // Update tracker pace summary bar
   const summary = document.getElementById('trackerPaceSummary');
-  if (summary) summary.innerHTML = 
-    'Total: <strong style="color:var(--text);">' + h + 'h ' + m + 'm</strong>' +
-    ' &nbsp;·&nbsp; Finish: <strong style="color:var(--yellow);">~' + finishTime + '</strong>' +
-    ' &nbsp;' + (mpp < 15 ? '⚠️ Very tight!' : mpp < 25 ? '✅ Solid pace!' : '😌 Easy does it');
+  if (summary) {
+    // Calculate dynamic finish based on actual checkins if any exist
+    const checkedCount = Object.keys(checkinTimes).length;
+    let dynamicFinish = finishTime;
+    let paceNote = mpp < 15 ? '⚠️ Very tight!' : mpp < 25 ? '✅ Solid pace!' : '😌 Easy does it';
+    if (checkedCount > 0) {
+      // Work out actual mins per pub from real checkins vs schedule
+      const firstStop = Math.min(...Object.keys(checkinTimes).map(Number));
+      const lastStop  = Math.max(...Object.keys(checkinTimes).map(Number));
+      if (lastStop > firstStop) {
+        const elapsed = checkinTimes[lastStop] - checkinTimes[firstStop];
+        const actualMpp = Math.round(elapsed / (lastStop - firstStop));
+        const remainingPubs = 27 - checkedCount;
+        const lastCheckinTime = checkinTimes[lastStop];
+        const dynamicFinishMins = lastCheckinTime + (actualMpp * remainingPubs);
+        dynamicFinish = fmtTime(dynamicFinishMins);
+        paceNote = actualMpp < 15 ? '🔥 Flying!' : actualMpp < 25 ? '✅ On track' : '🐢 Running late';
+      }
+    }
+    summary.innerHTML =
+      'Total: <strong style="color:var(--text);">' + h + 'h ' + m + 'm</strong>' +
+      ' &nbsp;·&nbsp; Finish: <strong style="color:var(--yellow);">~' + dynamicFinish + '</strong>' +
+      ' &nbsp;' + paceNote;
+  }
   // Re-render tracker rows with updated times
   if (document.getElementById('pubsGrid').children.length > 0) renderTracker();
 }

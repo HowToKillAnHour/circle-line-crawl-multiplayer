@@ -258,10 +258,7 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
       style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
       🍎 Apple Maps
     </button>
-    <button onclick="setMapApp('citymapper')" id="mapBtn-citymapper"
-      style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
-      🚇 Citymapper
-    </button>
+
   </div>
 </div>
 
@@ -591,8 +588,6 @@ function openMap(q) {
   const enc = encodeURIComponent(q);
   if (mapApp === 'apple') {
     window.location.href = 'maps://?q=' + enc;
-  } else if (mapApp === 'citymapper') {
-    window.open('https://citymapper.com/directions?endname=' + enc, '_blank');
   } else {
     // Google Maps — try app first, fall back to web
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;

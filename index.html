@@ -395,6 +395,7 @@ function showToast(msg) {
 // Firebase initialised below after state declarations
 
 async function fbRead() {
+  if (fbSaving) return; // skip if mid-save to avoid overwriting local state with stale data
   try {
     const res = await fetch(FB_URL + '?t=' + Date.now());
     if (!res.ok) return;
@@ -419,9 +420,18 @@ async function fbRead() {
       });
     }
     saveLocal();
+    // Sync startTime input with actual check-in data received from Firebase
+    if (Object.keys(checkinTimes).length > 0) {
+      const earliest = Math.min(...Object.values(checkinTimes));
+      const eh = Math.floor(earliest / 60);
+      const em = Math.floor(earliest % 60);
+      const timeStr = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0');
+      const startEl = document.getElementById('startTime');
+      if (startEl && startEl.value !== timeStr) startEl.value = timeStr;
+    }
     // Re-render tracker if splash is dismissed
     if (document.getElementById('welcomeScreen').style.display === 'none') {
-      renderTracker();
+      calcPace(); // rebuilds schedule from updated startTime + re-renders tracker + restarts countdown
       if (adminUnlocked) renderAdminPanel();
     }
   } catch(e) { console.warn('FB read error', e); }
@@ -433,12 +443,14 @@ function fbListen() {
 }
 
 async function fbSave() {
+  fbSaving = true;
   try {
     const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes });
     lastFbData = body; // update so we don't re-process our own write
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
+  finally { fbSaving = false; }
 }
 
 function saveLocal() {
@@ -629,6 +641,7 @@ const FB_URL = 'https://circle-line-crawl-53191-default-rtdb.europe-west1.fireba
 let fbReady = false;
 let fbPollInterval = null;
 let lastFbData = '';
+let fbSaving = false;
 
 function save() {
   saveLocal();
@@ -1522,6 +1535,14 @@ function askForNotifications() {
 if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
   const nudge = document.getElementById('notifNudge');
   if (nudge) nudge.style.display = 'none';
+}
+// Sync startTime input with check-in data persisted in localStorage
+if (Object.keys(checkinTimes).length > 0) {
+  const earliest = Math.min(...Object.values(checkinTimes));
+  const eh = Math.floor(earliest / 60);
+  const em = Math.floor(earliest % 60);
+  const startEl = document.getElementById('startTime');
+  if (startEl) startEl.value = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0');
 }
 calcPace();
 

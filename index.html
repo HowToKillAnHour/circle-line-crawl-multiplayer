@@ -17,8 +17,8 @@
 
 /* ── WELCOME SCREEN ── */
 #welcomeScreen{
-position:fixed;inset:0;background:var(–dark);z-index:9999;
-display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+position:fixed;inset:0;background:#0A0A0A;z-index:9999;
+display:none;flex-direction:column;align-items:center;justify-content:flex-start;
 padding:48px 24px 32px;text-align:center;overflow-y:auto;
 }
 .welcome-roundel{
@@ -199,7 +199,7 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
 
 <!-- ══ SPLASH SCREEN ══ -->
 
-<div id="welcomeScreen">
+<div id="welcomeScreen" style="display:flex;">
   <div class="welcome-roundel"><span class="welcome-roundel-text">PUB<br>CRAWL</span></div>
   <div class="welcome-title">Circle Line</div>
   <div class="welcome-sub">Pub Crawl · 27 Stops</div>

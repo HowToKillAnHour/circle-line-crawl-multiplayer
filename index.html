@@ -338,7 +338,7 @@
   </div>
 </div>
 
-<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><span style="font-size:9px;opacity:0.4;">v1.1</span></footer>
+<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><span style="font-size:9px;opacity:0.4;">v1.2</span></footer>
 <div class="toast" id="toast"></div>
 
 <!-- ══ CHECK-IN MODAL ══ -->
@@ -1349,7 +1349,7 @@ function calcPace() {
   if (!s) return;
   const [sh, sm] = s.split(':').map(Number);
   const startMins = sh * 60 + sm;
-  const schedule = buildSchedule(startMins, mpp);
+  const schedule = getSchedule(); // uses actual checkin times
   const last = schedule[26];
   const totalMins = last.leave - startMins;
   const h = Math.floor(totalMins / 60), m = totalMins % 60;
@@ -1525,9 +1525,6 @@ if (typeof Notification !== 'undefined' && Notification.permission === 'granted'
   const nudge = document.getElementById('notifNudge');
   if (nudge) nudge.style.display = 'none';
 }
-calcPace();
-
-// Fresh state — Firebase will populate on first fbRead
 
 // Set sticky top to just below header + tabs
 function fixStickyTop() {
@@ -1541,7 +1538,7 @@ function fixStickyTop() {
 fixStickyTop();
 window.addEventListener('resize', fixStickyTop);
 
-// Start app
+// Start app — Firebase populates state on first fbRead
 fbListen();
 renderTracker();
 calcPace();

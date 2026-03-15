@@ -344,7 +344,7 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
   </div>
 </div>
 
-<footer>🍺 Drink responsibly · 27 stops · Circle Line</footer>
+<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><span style="font-size:9px;opacity:0.4;">v1.1</span></footer>
 <div class="toast" id="toast"></div>
 
 <!-- ══ CHECK-IN MODAL ══ -->
@@ -713,6 +713,7 @@ function toggleCheckin(stop) {
   if (row) row.classList.add('just-done');
   save();
   renderTracker();
+  calcPace(); // recalculate finish time based on actual pace
   // Restart countdown so it reacts to the new check-in
   const s = document.getElementById('startTime').value || '11:00';
   const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
@@ -768,9 +769,9 @@ function updateProgress() {
   const n = allDone.size;
   document.getElementById('headerCount').textContent = n + '/27';
   document.getElementById('progressFill').style.width = (n/27*100) + '%';
-  // Show exact message for this pub count
-  const survivalEntry = SURVIVAL.find(([t]) => t === n);
-  const msg = survivalEntry ? survivalEntry[1] : SURVIVAL.reduce((best, [t,txt]) => n >= t ? txt : best, SURVIVAL[0][1]);
+  // Show message — exact match first, then highest match
+  let msg = SURVIVAL[0][1];
+  for (const [t,txt] of SURVIVAL) { if (n >= t) msg = txt; }
   document.getElementById('survivalText').textContent = msg;
   // Show next stop banner
   const banner = document.getElementById('nextStopBanner');
@@ -781,10 +782,12 @@ function updateProgress() {
       const lastStop = checkedStops[checkedStops.length - 1];
       const nextPub = PUBS.find(p => p.stop === lastStop.stop + 1);
       if (nextPub) {
-          banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Next stop</span> &nbsp;🚇&nbsp; #' + nextPub.stop + ' ' + nextPub.name + ' · ' + nextPub.station;
+        banner.style.display = 'block';
+        banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Next stop</span> &nbsp;🚇&nbsp; #' + nextPub.stop + ' ' + nextPub.name + ' · ' + nextPub.station;
       } else {
         // All done
-          banner.innerHTML = '🏆 All 27 pubs done!';
+        banner.style.display = 'block';
+        banner.innerHTML = '🏆 All 27 pubs done!';
         banner.style.color = '#FFD329';
         banner.style.borderColor = '#FFD329';
         banner.style.background = 'rgba(255,211,41,0.1)';
@@ -793,7 +796,8 @@ function updateProgress() {
       // Admin has manually set a current stop
       const pub = PUBS.find(p => p.stop === adminCurrentStop);
       if (pub) {
-          banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Heading to</span> &nbsp;🚇&nbsp; #' + pub.stop + ' ' + pub.name + ' · ' + pub.station;
+        banner.style.display = 'block';
+        banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Heading to</span> &nbsp;🚇&nbsp; #' + pub.stop + ' ' + pub.name + ' · ' + pub.station;
       }
     } else {
       banner.style.display = 'none';

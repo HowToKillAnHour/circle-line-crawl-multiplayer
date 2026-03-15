@@ -242,6 +242,26 @@
 
     </div>
 
+    <!-- Map app picker -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:10px;">Open directions in</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="setMapApp('google')" id="mapBtn-google"
+          style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
+          🗺️ Google Maps
+        </button>
+        <button onclick="setMapApp('apple')" id="mapBtn-apple"
+          style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
+          🍎 Apple Maps
+        </button>
+        <button onclick="setMapApp('citymapper')" id="mapBtn-citymapper"
+          style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
+          🚇 Citymapper
+        </button>
+      </div>
+    </div>
+
+
     <button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
       START THE CRAWL 🍺
     </button>
@@ -541,14 +561,36 @@ const CLOUDINARY_CLOUD = 'dwcrs0vkk';
 const CLOUDINARY_PRESET = 'pub-crawl';
 const CLOUDINARY_BASE = 'https://res.cloudinary.com/' + CLOUDINARY_CLOUD + '/image/upload/';
 
+let mapApp = localStorage.getItem('clp_mapapp') || 'google';
+
+function setMapApp(app) {
+  mapApp = app;
+  localStorage.setItem('clp_mapapp', app);
+  // Highlight selected button
+  ['google','apple','citymapper'].forEach(a => {
+    const btn = document.getElementById('mapBtn-' + a);
+    if (!btn) return;
+    btn.style.borderColor = a === app ? 'var(--yellow)' : 'var(--border)';
+    btn.style.color = a === app ? 'var(--yellow)' : 'var(--text)';
+    btn.style.background = a === app ? 'rgba(255,211,41,0.1)' : 'var(--card)';
+  });
+}
+
 function openMap(q) {
   const enc = encodeURIComponent(q);
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  if (isIOS) {
-    window.location.href = 'comgooglemaps://?q=' + enc + '&zoom=16';
-    setTimeout(() => { window.location.href = 'maps://?q=' + enc; }, 600);
+  if (mapApp === 'apple') {
+    window.location.href = 'maps://?q=' + enc;
+  } else if (mapApp === 'citymapper') {
+    window.open('https://citymapper.com/directions?endname=' + enc, '_blank');
   } else {
-    window.location.href = 'geo:0,0?q=' + enc;
+    // Google Maps — try app first, fall back to web
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      window.location.href = 'comgooglemaps://?q=' + enc + '&zoom=16';
+      setTimeout(() => { window.open('https://maps.google.com/?q=' + enc, '_blank'); }, 800);
+    } else {
+      window.open('https://maps.google.com/?q=' + enc, '_blank');
+    }
   }
 }
 
@@ -653,6 +695,19 @@ function startApp() {
   fixStickyTop();
   askForNotifications();
 }
+
+// Highlight saved map pref on splash load
+function initMapPref() {
+  setMapPref(mapPref);
+}
+
+// Highlight saved map preference on splash screen load
+(function() {
+  const saved = localStorage.getItem('clp_mapapp') || 'google';
+  mapApp = saved;
+  // Delay so DOM is ready
+  setTimeout(() => setMapApp(saved), 50);
+})();
 
 function welcomeAddPlayer() {}
 function selectUser(name) { startApp(); }

@@ -316,11 +316,11 @@
       <h3>⏱ Timeline</h3>
       <div class="pace-row">
         <span class="pace-label">Start time</span>
-        <input class="pace-input" type="time" id="startTime" value="11:00" oninput="calcPace()">
+        <input class="pace-input" type="time" id="startTime" value="10:00" oninput="appStartTime=this.value;calcPace()">
       </div>
       <div class="pace-row">
         <span class="pace-label">Mins per pub</span>
-        <input class="pace-input" type="number" id="minsPerPub" value="20" min="5" max="120" oninput="calcPace()" style="width:70px;">
+        <input class="pace-input" type="number" id="minsPerPub" value="20" min="5" max="120" oninput="appMinsPerPub=parseInt(this.value)||20;calcPace()" style="width:70px;">
       </div>
       <div class="pace-result" id="paceResult">Set your times above!</div>
     </div>
@@ -400,6 +400,7 @@ async function fbRead() {
     if (!res.ok) return;
     const data = await res.json();
     if (!data) return;
+    // Only skip if the data hasn't meaningfully changed (checkins + visited)
     const str = JSON.stringify(data);
     if (str === lastFbData) return;
     lastFbData = str;
@@ -419,23 +420,22 @@ async function fbRead() {
       });
     }
     saveLocal();
-    // Re-render tracker if splash is dismissed
-    if (document.getElementById('welcomeScreen').style.display === 'none') {
-      renderTracker();
-      if (adminUnlocked) renderAdminPanel();
-    }
+    // Always recalculate schedule and re-render for ALL users
+    calcPace();
+    if (adminUnlocked) renderAdminPanel();
   } catch(e) { console.warn('FB read error', e); }
 }
 
 function fbListen() {
   fbRead();
-  fbPollInterval = setInterval(fbRead, 2000);
+  fbPollInterval = setInterval(fbRead, 1500); // poll every 1.5s for reliable sync
 }
 
 async function fbSave() {
   try {
     const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes });
-    lastFbData = body; // update so we don't re-process our own write
+    // Update skip-check with same fields fbRead uses
+    lastFbData = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
@@ -659,10 +659,23 @@ function selectUser(name) { startApp(); }
 
 // ── TRACKER ──
 function getSchedule() {
-  const s = document.getElementById('startTime').value || '11:00';
+  const s = document.getElementById('startTime').value || '10:00';
   const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
   const [sh, sm] = s.split(':').map(Number);
-  return buildSchedule(sh * 60 + sm, mpp);
+  const startMins = sh * 60 + sm;
+  // Build schedule using actual checkin times where we have them,
+  // then cascade travel + mpp forward for unchecked pubs
+  const schedule = [];
+  let cursor = startMins;
+  for (let i = 0; i < 27; i++) {
+    const stop = i + 1;
+    const travel = TRAVEL_MINS[i] || 0;
+    const arrive = (checkinTimes[stop] !== undefined) ? checkinTimes[stop] : cursor;
+    const leave = arrive + mpp;
+    schedule.push({ stop, arrive, leave, travelToNext: travel });
+    cursor = leave + travel;
+  }
+  return schedule;
 }
 
 function toggleCheckin(stop) {
@@ -681,37 +694,26 @@ function toggleCheckin(stop) {
     const earliest = Math.min(...Object.values(checkinTimes));
     const eh = Math.floor(earliest / 60);
     const em = Math.floor(earliest % 60);
-    const timeStr = eh.toString().padStart(2,'0') + ':' + em.toString().padStart(2,'0');
     const startEl = document.getElementById('startTime');
-    if (startEl && startEl.value !== timeStr) {
-      startEl.value = timeStr;
-      calcPace();
-    }
+    if (startEl) startEl.value = eh.toString().padStart(2,'0') + ':' + em.toString().padStart(2,'0');
     showToast('🍺 Stop #' + stop + ' checked in!');
   } else {
     playerVisits[stop].splice(vi, 1);
     if (!playerVisits[stop].length) {
       visited = visited.filter(s => s !== stop);
-      delete playerVisits[stop]; // remove empty arrays so Firebase syncs the removal
+      delete playerVisits[stop];
     }
     delete checkinTimes[stop];
-    // If no pubs left checked, clear start time
     if (Object.keys(checkinTimes).length === 0) {
       const startEl = document.getElementById('startTime');
-      if (startEl) { startEl.value = '11:00'; calcPace(); }
+      if (startEl) startEl.value = '10:00';
     }
     showToast('Unchecked stop #' + stop);
   }
   const row = document.getElementById('pub-' + stop);
   if (row) row.classList.add('just-done');
   save();
-  renderTracker();
-  calcPace(); // recalculate finish time based on actual pace
-  // Restart countdown so it reacts to the new check-in
-  const s = document.getElementById('startTime').value || '11:00';
-  const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
-  const [sh, sm] = s.split(':').map(Number);
-  startCountdown(buildSchedule(sh * 60 + sm, mpp), mpp);
+  calcPace(); // always recalculate — updates Est. finish + all pub times
 }
 
 function renderTracker() {
@@ -769,7 +771,11 @@ function updateProgress() {
   // Show next stop banner
   const banner = document.getElementById('nextStopBanner');
   if (banner) {
-    // Find last checked-in stop
+    // Reset styles each time
+    banner.style.color = '#4a9eff';
+    banner.style.borderLeft = '3px solid #4a9eff';
+    banner.style.background = 'rgba(74,158,255,0.1)';
+
     const checkedStops = PUBS.filter(p => visited.includes(p.stop) || (playerVisits[p.stop] && playerVisits[p.stop].length > 0));
     if (checkedStops.length > 0) {
       const lastStop = checkedStops[checkedStops.length - 1];
@@ -778,19 +784,11 @@ function updateProgress() {
         banner.style.display = 'block';
         banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Next stop</span> &nbsp;🚇&nbsp; #' + nextPub.stop + ' ' + nextPub.name + ' · ' + nextPub.station;
       } else {
-        // All done
         banner.style.display = 'block';
-        banner.innerHTML = '🏆 All 27 pubs done!';
         banner.style.color = '#FFD329';
-        banner.style.borderColor = '#FFD329';
+        banner.style.borderLeft = '3px solid #FFD329';
         banner.style.background = 'rgba(255,211,41,0.1)';
-      }
-    } else if (adminCurrentStop) {
-      // Admin has manually set a current stop
-      const pub = PUBS.find(p => p.stop === adminCurrentStop);
-      if (pub) {
-        banner.style.display = 'block';
-        banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Heading to</span> &nbsp;🚇&nbsp; #' + pub.stop + ' ' + pub.name + ' · ' + pub.station;
+        banner.innerHTML = '🏆 All 27 pubs done! Absolute legends.';
       }
     } else {
       banner.style.display = 'none';
@@ -1343,8 +1341,11 @@ function fmtDuration(mins) {
 }
 
 function calcPace() {
-  const s = document.getElementById('startTime').value;
-  const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
+  const startEl = document.getElementById('startTime');
+  const mppEl = document.getElementById('minsPerPub');
+  // Use stored JS vars as fallback when admin panel is hidden
+  const s = (startEl && startEl.value) ? startEl.value : appStartTime;
+  const mpp = (mppEl && mppEl.value) ? (parseInt(mppEl.value) || 20) : appMinsPerPub;
   if (!s) return;
   const [sh, sm] = s.split(':').map(Number);
   const startMins = sh * 60 + sm;
@@ -1359,37 +1360,38 @@ function calcPace() {
     'Finish: <strong>~' + finishTime + '</strong><br>' +
     (mpp < 15 ? '⚠️ Very tight pace!' : mpp < 25 ? '✅ Solid pace!' : '😌 Nice and leisurely.');
 
-  startCountdown(schedule, mpp);
-  // Update tracker pace summary bar
+  // Use getSchedule() which includes actual checkin times
+  const realSchedule = getSchedule();
+  startCountdown(realSchedule, mpp);
+
+  // Update tracker pace summary
   const summary = document.getElementById('trackerPaceSummary');
   if (summary) {
-    // Calculate dynamic finish based on actual checkins if any exist
-    const checkedCount = Object.keys(checkinTimes).length;
-    let dynamicFinish = finishTime;
-    let paceNote = mpp < 15 ? '⚠️ Very tight!' : mpp < 25 ? '✅ Solid pace!' : '😌 Easy does it';
+    const checkedCount = PUBS.filter(p =>
+      visited.includes(p.stop) || (playerVisits[p.stop] && playerVisits[p.stop].length > 0)
+    ).length;
 
-    if (checkedCount >= 2) {
-      // Collect all actual checkin times sorted by stop number
-      const stops = Object.keys(checkinTimes).map(Number).sort((a,b) => a-b);
-      const firstTime = checkinTimes[stops[0]];
-      const lastTime  = checkinTimes[stops[stops.length-1]];
-      const pubsDone  = stops.length;
-      // Average time between consecutive pubs (includes travel + drinking)
-      const avgMinsPerPub = (lastTime - firstTime) / (pubsDone - 1);
-      const pubsLeft = 27 - pubsDone;
-      // Projected finish = last checkin time + (pubs left × avg pace) + one more avg pub duration
-      const projectedFinish = lastTime + (pubsLeft * avgMinsPerPub);
-      dynamicFinish = fmtTime(projectedFinish);
-      paceNote = avgMinsPerPub < 15 ? '🔥 Flying!' : avgMinsPerPub < 25 ? '✅ On track' : '🐢 Running behind';
-    }
+    // Est finish = last stop's leave time from real schedule
+    const estFinish = fmtTime(realSchedule[26].leave);
+
+    // Pace note — compare real finish vs scheduled finish
+    const scheduledFinish = schedule[26].leave;
+    const realFinish = realSchedule[26].leave;
+    const diff = Math.round(realFinish - scheduledFinish);
+    let paceNote = checkedCount === 0
+      ? (mpp < 15 ? '⚠️ Very tight!' : mpp < 25 ? '✅ Solid pace!' : '😌 Easy does it')
+      : diff < -10 ? '🔥 Flying!'
+      : diff <= 10 ? '✅ On track'
+      : '🐢 ' + Math.abs(diff) + 'm behind';
 
     summary.innerHTML =
       'Done: <strong style="color:var(--text);">' + checkedCount + '/27</strong>' +
-      ' &nbsp;·&nbsp; Est. finish: <strong style="color:var(--yellow);">~' + dynamicFinish + '</strong>' +
+      ' &nbsp;·&nbsp; Est. finish: <strong style="color:var(--yellow);">~' + estFinish + '</strong>' +
       ' &nbsp;' + paceNote;
   }
-  // Re-render tracker rows with updated times
-  if (document.getElementById('pubsGrid').children.length > 0) renderTracker();
+
+  // Re-render tracker so pub times update
+  renderTracker();
 }
 
 function startCountdown(schedule, minsPerPub) {

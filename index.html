@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -15,194 +14,192 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--dark);color:var(--text);font-family:'Barlow Condensed',sans-serif;min-height:100vh;overflow-x:hidden;}
 
-/* ── WELCOME SCREEN ── */
-#welcomeScreen{
-position:fixed;inset:0;background:#0A0A0A;z-index:9999;
-display:none;flex-direction:column;align-items:center;justify-content:flex-start;
-padding:48px 24px 32px;text-align:center;overflow-y:auto;
-}
-.welcome-roundel{
-width:88px;height:88px;background:var(–red);border-radius:50%;
-display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:20px;
-box-shadow:0 0 0 6px rgba(227,23,62,0.15);
-}
-.welcome-roundel::after{content:’’;position:absolute;width:114px;height:22px;background:var(–blue);border-radius:4px;}
-.welcome-roundel-text{position:absolute;color:white;font-size:11px;font-weight:700;font-family:‘DM Mono’,monospace;z-index:1;text-align:center;line-height:1.2;}
-.welcome-title{font-family:‘Black Han Sans’,sans-serif;font-size:36px;letter-spacing:2px;color:var(–yellow);margin-bottom:4px;}
-.welcome-sub{font-size:13px;color:var(–muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;}
-.welcome-note{font-size:13px;color:var(–muted);max-width:300px;line-height:1.5;}
+  /* ── WELCOME SCREEN ── */
+  #welcomeScreen{
+    position:fixed;inset:0;background:#0A0A0A;z-index:9999;
+    display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding:48px 24px 32px;text-align:center;overflow-y:auto;
+  }
+  .welcome-roundel{
+    width:88px;height:88px;background:var(--red);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:20px;
+    box-shadow:0 0 0 6px rgba(227,23,62,0.15);
+  }
+  .welcome-roundel::after{content:'';position:absolute;width:114px;height:22px;background:var(--blue);border-radius:4px;}
+  .welcome-roundel-text{position:absolute;color:white;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;z-index:1;text-align:center;line-height:1.2;}
+  .welcome-title{font-family:'Black Han Sans',sans-serif;font-size:36px;letter-spacing:2px;color:var(--yellow);margin-bottom:4px;}
+  .welcome-sub{font-size:13px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;}
+  .welcome-note{font-size:13px;color:var(--muted);max-width:300px;line-height:1.5;}
 
-/* ── HEADER ── */
-header{
-background:var(–yellow);color:var(–dark);padding:12px 18px;
-display:flex;align-items:center;gap:12px;
-position:sticky;top:0;z-index:100;
-}
-.roundel{width:44px;height:44px;background:var(–red);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;overflow:visible;}
-.roundel::after{content:’’;position:absolute;width:58px;height:12px;background:var(–blue);border-radius:3px;z-index:1;}
-.roundel-text{position:absolute;color:white;font-size:7px;font-weight:700;font-family:‘DM Mono’,monospace;z-index:2;text-align:center;line-height:1.1;}
-.header-info h1{font-family:‘Black Han Sans’,sans-serif;font-size:clamp(15px,3.5vw,20px);letter-spacing:1px;line-height:1;}
-.header-right{margin-left:auto;text-align:right;flex-shrink:0;}
-.progress-big{font-family:‘Black Han Sans’,sans-serif;font-size:26px;line-height:1;}
-.progress-label{font-size:9px;font-weight:700;opacity:0.55;text-transform:uppercase;letter-spacing:2px;}
+  /* ── HEADER ── */
+  header{
+    background:var(--yellow);color:var(--dark);padding:12px 18px;
+    display:flex;align-items:center;gap:12px;
+    position:sticky;top:0;z-index:100;
+  }
+  .roundel{width:44px;height:44px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;overflow:visible;}
+  .roundel::after{content:'';position:absolute;width:58px;height:12px;background:var(--blue);border-radius:3px;z-index:1;}
+  .roundel-text{position:absolute;color:white;font-size:7px;font-weight:700;font-family:'DM Mono',monospace;z-index:2;text-align:center;line-height:1.1;}
+  .header-info h1{font-family:'Black Han Sans',sans-serif;font-size:clamp(15px,3.5vw,20px);letter-spacing:1px;line-height:1;}
+  .header-right{margin-left:auto;text-align:right;flex-shrink:0;}
+  .progress-big{font-family:'Black Han Sans',sans-serif;font-size:26px;line-height:1;}
+  .progress-label{font-size:9px;font-weight:700;opacity:0.55;text-transform:uppercase;letter-spacing:2px;}
 
-.progress-track{background:rgba(0,0,0,0.25);height:4px;}
-.progress-fill{height:100%;background:var(–dark);transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);}
+  .progress-track{background:rgba(0,0,0,0.25);height:4px;}
+  .progress-fill{height:100%;background:var(--dark);transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);}
 
-/* ── TABS ── */
-.tabs{display:flex;background:var(–mid);border-bottom:1px solid var(–border);position:sticky;top:70px;z-index:99;}
-.tab{flex:1;padding:13px 8px;font-family:‘Barlow Condensed’,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:none;border:none;color:var(–muted);cursor:pointer;transition:all 0.2s;border-bottom:3px solid transparent;margin-bottom:-1px;}
-.tab.active{color:var(–yellow);border-bottom-color:var(–yellow);}
+  /* ── TABS ── */
+  .tabs{display:flex;background:var(--mid);border-bottom:1px solid var(--border);position:sticky;top:70px;z-index:99;}
+  .tab{flex:1;padding:13px 8px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:none;border:none;color:var(--muted);cursor:pointer;transition:all 0.2s;border-bottom:3px solid transparent;margin-bottom:-1px;}
+  .tab.active{color:var(--yellow);border-bottom-color:var(--yellow);}
 
-.panel{display:none;}
-.panel.active{display:block;}
+  .panel{display:none;}
+  .panel.active{display:block;}
 
-/* ── TRACKER ── */
-.survival-banner{background:var(–card);border-left:3px solid var(–yellow);padding:12px 16px;font-size:15px;font-weight:700;letter-spacing:0.5px;color:var(–muted);}
-.survival-banner span{color:var(–text);}
-.pubs-grid{display:flex;flex-direction:column;gap:1px;background:var(–border);}
-.pub-row{background:var(–card);display:flex;align-items:center;gap:14px;padding:16px 16px;cursor:pointer;transition:background 0.15s;user-select:none;position:relative;}
-.pub-row.done{background:#111;border-left:3px solid #333 !important;opacity:0.45;}
-.pub-row:active{background:#1a1a1a;}
-.stop-num{width:34px;height:34px;background:var(–border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:‘DM Mono’,monospace;font-size:13px;font-weight:700;flex-shrink:0;transition:all 0.25s;}
-.pub-row.done .stop-num{background:#222;color:#444;font-size:13px;}
-.circle-dot{width:8px;height:8px;border-radius:50%;background:var(–border);flex-shrink:0;transition:background 0.25s;}
-.pub-row.done .circle-dot{background:var(–yellow);}
-.pub-info{flex:1;min-width:0;}
-.pub-name{font-size:19px;font-weight:700;line-height:1.2;white-space:normal;overflow-wrap:break-word;word-break:normal;color:#F0EDE6;}
-.pub-row.done .pub-name{color:#555;font-size:18px;text-decoration:line-through;}
-.pub-station{font-size:12px;color:var(–muted);font-family:‘DM Mono’,monospace;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
-.checkin-avatars{display:flex;gap:3px;margin-top:4px;}
-.checkin-avatar{background:var(–yellow);color:var(–dark);border-radius:3px;font-size:9px;font-weight:700;padding:1px 5px;font-family:‘DM Mono’,monospace;}
-.check-icon{width:34px;height:34px;border-radius:50%;background:transparent;border:2px solid var(–border);display:flex;align-items:center;justify-content:center;font-size:18px;opacity:0.3;flex-shrink:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}
-.pub-row.done .check-icon{background:#333;border-color:#555;opacity:1;transform:scale(1);}
-.pub-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;}
-.map-btn{background:none;border:1px solid var(–border);border-radius:6px;color:var(–muted);font-size:14px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s;}
-.map-btn:active{background:var(–blue);border-color:var(–blue);color:white;}
-.cam-btn{background:none;border:1px solid var(–border);border-radius:6px;color:var(–muted);font-size:14px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s;}
-.cam-btn:active{background:var(–yellow);border-color:var(–yellow);}
+  /* ── TRACKER ── */
+  .survival-banner{background:var(--card);border-left:3px solid var(--yellow);padding:12px 16px;font-size:15px;font-weight:700;letter-spacing:0.5px;color:var(--muted);}
+  .survival-banner span{color:var(--text);}
+  .pubs-grid{display:flex;flex-direction:column;gap:1px;background:var(--border);}
+  .pub-row{background:var(--card);display:flex;align-items:center;gap:14px;padding:16px 16px;cursor:pointer;transition:background 0.15s;user-select:none;position:relative;}
+  .pub-row.done{background:#111;border-left:3px solid #333 !important;opacity:0.45;}
+  .pub-row:active{background:#1a1a1a;}
+  .stop-num{width:34px;height:34px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;flex-shrink:0;transition:all 0.25s;}
+  .pub-row.done .stop-num{background:#222;color:#444;font-size:13px;}
+  .circle-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background 0.25s;}
+  .pub-row.done .circle-dot{background:var(--yellow);}
+  .pub-info{flex:1;min-width:0;}
+  .pub-name{font-size:19px;font-weight:700;line-height:1.2;white-space:normal;overflow-wrap:break-word;word-break:normal;color:#F0EDE6;}
+  .pub-row.done .pub-name{color:#555;font-size:18px;text-decoration:line-through;}
+  .pub-station{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+  .checkin-avatars{display:flex;gap:3px;margin-top:4px;}
+  .checkin-avatar{background:var(--yellow);color:var(--dark);border-radius:3px;font-size:9px;font-weight:700;padding:1px 5px;font-family:'DM Mono',monospace;}
+  .check-icon{width:34px;height:34px;border-radius:50%;background:transparent;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;opacity:0.3;flex-shrink:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+  .pub-row.done .check-icon{background:#333;border-color:#555;opacity:1;transform:scale(1);}
+  .pub-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;}
+  .map-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s;}
+  .map-btn:active{background:var(--blue);border-color:var(--blue);color:white;}
+  .cam-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s;}
+  .cam-btn:active{background:var(--yellow);border-color:var(--yellow);}
 
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
-.modal-overlay.open{opacity:1;pointer-events:all;}
-.modal-sheet{background:var(–mid);border:1px solid var(–border);border-radius:20px 20px 0 0;padding:20px 16px 44px;width:100%;max-width:480px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1);max-height:90vh;overflow-y:auto;}
-.modal-overlay.open .modal-sheet{transform:translateY(0);}
-.modal-handle{width:40px;height:4px;background:var(–border);border-radius:2px;margin:0 auto 16px;}
-.modal-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(–muted);margin-bottom:6px;text-align:center;}
-.modal-pub-name{font-family:‘Black Han Sans’,sans-serif;font-size:22px;color:var(–yellow);text-align:center;margin-bottom:14px;}
-.modal-pts-badge{background:rgba(255,211,41,0.15);border:1px solid rgba(255,211,41,0.3);border-radius:6px;padding:4px 10px;font-size:13px;font-family:‘DM Mono’,monospace;color:var(–yellow);margin-bottom:14px;text-align:center;}
-.player-select-list{display:flex;flex-direction:column;gap:8px;}
-.player-select-btn{background:var(–card);border:2px solid var(–border);border-radius:10px;color:var(–text);font-family:‘Barlow Condensed’,sans-serif;font-size:17px;font-weight:700;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;}
-.player-select-btn:hover{border-color:var(–yellow);background:#1e1b09;}
-.player-select-btn.already-done{border-color:var(–green);}
-.btn-pts{font-size:13px;font-family:‘DM Mono’,monospace;color:var(–yellow);}
-.btn-pts-done{font-size:13px;font-family:‘DM Mono’,monospace;color:var(–green);}
-.modal-divider{border:none;border-top:1px solid var(–border);margin:18px 0 14px;}
-.modal-section-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(–muted);margin-bottom:12px;text-align:center;}
+  /* ── MODAL ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal-sheet{background:var(--mid);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px 16px 44px;width:100%;max-width:480px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1);max-height:90vh;overflow-y:auto;}
+  .modal-overlay.open .modal-sheet{transform:translateY(0);}
+  .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+  .modal-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;text-align:center;}
+  .modal-pub-name{font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--yellow);text-align:center;margin-bottom:14px;}
+  .modal-pts-badge{background:rgba(255,211,41,0.15);border:1px solid rgba(255,211,41,0.3);border-radius:6px;padding:4px 10px;font-size:13px;font-family:'DM Mono',monospace;color:var(--yellow);margin-bottom:14px;text-align:center;}
+  .player-select-list{display:flex;flex-direction:column;gap:8px;}
+  .player-select-btn{background:var(--card);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;}
+  .player-select-btn:hover{border-color:var(--yellow);background:#1e1b09;}
+  .player-select-btn.already-done{border-color:var(--green);}
+  .btn-pts{font-size:13px;font-family:'DM Mono',monospace;color:var(--yellow);}
+  .btn-pts-done{font-size:13px;font-family:'DM Mono',monospace;color:var(--green);}
+  .modal-divider{border:none;border-top:1px solid var(--border);margin:18px 0 14px;}
+  .modal-section-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;text-align:center;}
 
-/* photos in modal */
-.pub-photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
-.pub-photo-wrap{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;}
-.pub-photo-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
-.del-photo{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;color:white;font-size:12px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.del-photo:hover{background:var(–red);}
-.photo-upload-area{border:2px dashed var(–border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.2s;position:relative;}
-.photo-upload-area:hover{border-color:var(–yellow);}
-.photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-.photo-upload-icon{font-size:30px;margin-bottom:6px;}
-.photo-upload-label{font-size:14px;color:var(–muted);font-weight:600;}
+  /* photos in modal */
+  .pub-photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+  .pub-photo-wrap{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;}
+  .pub-photo-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .del-photo{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;color:white;font-size:12px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .del-photo:hover{background:var(--red);}
+  .photo-upload-area{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.2s;position:relative;}
+  .photo-upload-area:hover{border-color:var(--yellow);}
+  .photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .photo-upload-icon{font-size:30px;margin-bottom:6px;}
+  .photo-upload-label{font-size:14px;color:var(--muted);font-weight:600;}
 
-.modal-cancel{width:100%;margin-top:14px;padding:12px;background:none;border:1px solid var(–border);border-radius:10px;color:var(–muted);font-family:‘Barlow Condensed’,sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;}
-.modal-cancel:hover{border-color:var(–red);color:var(–red);}
+  .modal-cancel{width:100%;margin-top:14px;padding:12px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+  .modal-cancel:hover{border-color:var(--red);color:var(--red);}
 
-/* ── PHOTOS TAB ── */
-.photos-empty{text-align:center;padding:48px 20px;color:var(–muted);}
-.photos-empty .big{font-size:52px;margin-bottom:12px;}
-.photos-empty p{font-size:15px;line-height:1.6;}
-.photo-stop-section{margin-bottom:24px;}
-.photo-stop-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(–border);}
-.photo-stop-num{width:26px;height:26px;background:var(–yellow);color:var(–dark);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:‘DM Mono’,monospace;font-size:12px;font-weight:700;flex-shrink:0;}
-.photo-stop-name{font-size:16px;font-weight:700;}
-.photo-stop-station{font-size:11px;color:var(–muted);font-family:‘DM Mono’,monospace;}
-.photos-masonry{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
-.photos-masonry img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block;cursor:pointer;transition:transform 0.15s;}
-.photos-masonry img:hover{transform:scale(1.03);}
+  /* ── PHOTOS TAB ── */
+  .photos-empty{text-align:center;padding:48px 20px;color:var(--muted);}
+  .photos-empty .big{font-size:52px;margin-bottom:12px;}
+  .photos-empty p{font-size:15px;line-height:1.6;}
+  .photo-stop-section{margin-bottom:24px;}
+  .photo-stop-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .photo-stop-num{width:26px;height:26px;background:var(--yellow);color:var(--dark);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0;}
+  .photo-stop-name{font-size:16px;font-weight:700;}
+  .photo-stop-station{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+  .photos-masonry{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+  .photos-masonry img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block;cursor:pointer;transition:transform 0.15s;}
+  .photos-masonry img:hover{transform:scale(1.03);}
 
-/* ── LIGHTBOX ── */
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
-.lightbox.open{opacity:1;pointer-events:all;}
-.lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain;}
-.lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:white;font-size:20px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  /* ── LIGHTBOX ── */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .lightbox.open{opacity:1;pointer-events:all;}
+  .lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain;}
+  .lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:white;font-size:20px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 
-/* ── LEADERBOARD ── */
+  /* ── LEADERBOARD ── */
 
-.remove-btn{background:none;border:none;color:var(–muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;flex-shrink:0;transition:color 0.2s;}
-.remove-btn:hover{color:var(–red);}
-.remove-btn:disabled{opacity:0.2;cursor:not-allowed;}
 
-/* admin unlock bar */
-.admin-bar{
-background:var(–card);border:1px solid var(–border);border-radius:10px;
-padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;
-}
-.admin-bar.unlocked{border-color:var(–yellow);}
-.admin-status{flex:1;font-size:14px;font-weight:700;}
-.admin-status small{display:block;font-size:11px;color:var(–muted);font-family:‘DM Mono’,monospace;font-weight:400;}
-.admin-btn{
-background:var(–border);border:none;border-radius:8px;color:var(–text);
-font-family:‘Barlow Condensed’,sans-serif;font-size:13px;font-weight:700;
-padding:8px 14px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;
-}
-.admin-btn:hover{background:var(–yellow);color:var(–dark);}
-.admin-btn.unlock-btn{background:rgba(255,211,41,0.15);border:1px solid rgba(255,211,41,0.4);color:var(–yellow);}
+  .remove-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;flex-shrink:0;transition:color 0.2s;}
+  .remove-btn:hover{color:var(--red);}
+  .remove-btn:disabled{opacity:0.2;cursor:not-allowed;}
 
-/* admin password modal */
-.pw-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:250;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s;}
-.pw-modal.open{opacity:1;pointer-events:all;}
-.pw-box{background:var(–mid);border:1px solid var(–border);border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center;}
-.pw-title{font-family:‘Black Han Sans’,sans-serif;font-size:22px;color:var(–yellow);margin-bottom:6px;}
-.pw-sub{font-size:13px;color:var(–muted);margin-bottom:20px;}
-.pw-input{width:100%;background:var(–card);border:2px solid var(–border);border-radius:10px;color:var(–text);font-family:‘DM Mono’,monospace;font-size:20px;font-weight:700;padding:14px;outline:none;text-align:center;letter-spacing:4px;transition:border-color 0.2s;margin-bottom:12px;}
-.pw-input:focus{border-color:var(–yellow);}
-.pw-input.error{border-color:var(–red);animation:shake 0.3s ease;}
-.pw-submit{width:100%;background:var(–yellow);border:none;border-radius:10px;color:var(–dark);font-family:‘Barlow Condensed’,sans-serif;font-size:16px;font-weight:900;padding:14px;cursor:pointer;margin-bottom:10px;}
-.pw-cancel{background:none;border:none;color:var(–muted);font-family:‘Barlow Condensed’,sans-serif;font-size:14px;cursor:pointer;padding:6px;}
+  /* admin unlock bar */
+  .admin-bar{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;
+  }
+  .admin-bar.unlocked{border-color:var(--yellow);}
+  .admin-status{flex:1;font-size:14px;font-weight:700;}
+  .admin-status small{display:block;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;font-weight:400;}
+  .admin-btn{
+    background:var(--border);border:none;border-radius:8px;color:var(--text);
+    font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+    padding:8px 14px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;
+  }
+  .admin-btn:hover{background:var(--yellow);color:var(--dark);}
+  .admin-btn.unlock-btn{background:rgba(255,211,41,0.15);border:1px solid rgba(255,211,41,0.4);color:var(--yellow);}
 
-.pace-section{background:var(–card);border:1px solid var(–border);border-radius:10px;padding:16px;margin-top:12px;}
-.pace-section h3{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(–yellow);margin-bottom:14px;opacity:0.8;}
-.pace-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
-.pace-label{font-size:13px;color:var(–muted);min-width:80px;}
-.pace-input{background:var(–border);border:1px solid #444;border-radius:6px;color:var(–text);font-family:‘DM Mono’,monospace;font-size:16px;padding:8px 12px;width:140px;outline:none;}
-.pace-input:focus{border-color:var(–yellow);}
-.pace-result{margin-top:12px;padding:10px 14px;background:rgba(255,211,41,0.08);border:1px solid rgba(255,211,41,0.3);border-radius:8px;font-size:14px;line-height:1.6;}
-.pace-result strong{color:var(–yellow);}
-.empty-state{text-align:center;padding:40px 20px;color:var(–muted);}
-.empty-state .emoji{font-size:48px;margin-bottom:12px;}
+  /* admin password modal */
+  .pw-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:250;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .pw-modal.open{opacity:1;pointer-events:all;}
+  .pw-box{background:var(--mid);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center;}
+  .pw-title{font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--yellow);margin-bottom:6px;}
+  .pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .pw-input{width:100%;background:var(--card);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Mono',monospace;font-size:20px;font-weight:700;padding:14px;outline:none;text-align:center;letter-spacing:4px;transition:border-color 0.2s;margin-bottom:12px;}
+  .pw-input:focus{border-color:var(--yellow);}
+  .pw-input.error{border-color:var(--red);animation:shake 0.3s ease;}
+  .pw-submit{width:100%;background:var(--yellow);border:none;border-radius:10px;color:var(--dark);font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;padding:14px;cursor:pointer;margin-bottom:10px;}
+  .pw-cancel{background:none;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:14px;cursor:pointer;padding:6px;}
 
-footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-family:‘DM Mono’,monospace;border-top:1px solid var(–border);margin-top:16px;letter-spacing:1px;}
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);background:var(–yellow);color:var(–dark);font-family:‘Barlow Condensed’,sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;padding:13px 26px;border-radius:40px;z-index:400;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
-.toast.show{transform:translateX(-50%) translateY(0);}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-.pub-row.just-done{animation:pop 0.3s ease;}
+  .pace-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:12px;}
+  .pace-section h3{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);margin-bottom:14px;opacity:0.8;}
+  .pace-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .pace-label{font-size:13px;color:var(--muted);min-width:80px;}
+  .pace-input{background:var(--border);border:1px solid #444;border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;padding:8px 12px;width:140px;outline:none;}
+  .pace-input:focus{border-color:var(--yellow);}
+  .pace-result{margin-top:12px;padding:10px 14px;background:rgba(255,211,41,0.08);border:1px solid rgba(255,211,41,0.3);border-radius:8px;font-size:14px;line-height:1.6;}
+  .pace-result strong{color:var(--yellow);}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+  .empty-state .emoji{font-size:48px;margin-bottom:12px;}
 
-.pub-row.next-target{background:#0a1628 !important;border-left:6px solid #4a9eff !important;opacity:1 !important;box-shadow:inset 0 0 30px rgba(74,158,255,0.08);}
-.pub-row.next-target .pub-name{color:#fff !important;font-size:22px;letter-spacing:0.5px;}
-.pub-row.next-target .stop-num{background:#4a9eff !important;color:#fff !important;font-size:15px;box-shadow:0 0 12px rgba(74,158,255,0.6);}
-.pub-row.next-target .check-icon{border-color:#4a9eff;box-shadow:0 0 8px rgba(74,158,255,0.4);}
-.pub-name-row{display:flex;align-items:baseline;gap:8px;}
-.pub-time{font-family:‘DM Mono’,monospace;font-size:13px;color:var(–yellow);opacity:0.8;font-weight:400;white-space:nowrap;}
-.pub-row.done .pub-time{opacity:0.4;}
+  footer{text-align:center;padding:20px;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;border-top:1px solid var(--border);margin-top:16px;letter-spacing:1px;}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--yellow);color:var(--dark);font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;padding:13px 26px;border-radius:40px;z-index:400;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .pub-row.just-done{animation:pop 0.3s ease;}
+
+  .pub-row.next-target{background:#0a1628 !important;border-left:6px solid #4a9eff !important;opacity:1 !important;box-shadow:inset 0 0 30px rgba(74,158,255,0.08);}
+  .pub-row.next-target .pub-name{color:#fff !important;font-size:22px;letter-spacing:0.5px;}
+  .pub-row.next-target .stop-num{background:#4a9eff !important;color:#fff !important;font-size:15px;box-shadow:0 0 12px rgba(74,158,255,0.6);}
+  .pub-row.next-target .check-icon{border-color:#4a9eff;box-shadow:0 0 8px rgba(74,158,255,0.4);}
+  .pub-name-row{display:flex;align-items:baseline;gap:8px;}
+  .pub-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--yellow);opacity:0.8;font-weight:400;white-space:nowrap;}
+  .pub-row.done .pub-time{opacity:0.4;}
 </style>
-
 <!-- No external SDK needed - using Firebase REST API directly -->
-
 </head>
 <body>
 
 <!-- ══ SPLASH SCREEN ══ -->
-
 <div id="welcomeScreen" style="display:flex;">
   <div class="welcome-roundel"><span class="welcome-roundel-text">PUB<br>CRAWL</span></div>
   <div class="welcome-title">Circle Line</div>
@@ -210,74 +207,71 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
 
   <div style="width:100%;max-width:360px;margin-top:4px;">
 
-```
-<!-- The pitch -->
-<div style="background:rgba(255,211,41,0.08);border:1px solid rgba(255,211,41,0.2);border-radius:16px;padding:20px;margin-bottom:12px;text-align:left;">
-  <div style="font-size:26px;font-weight:900;color:var(--yellow);margin-bottom:10px;font-family:'Black Han Sans',sans-serif;letter-spacing:1px;">27 pubs. One circle. No excuses.</div>
-  <div style="font-size:17px;color:var(--text);line-height:1.7;">
-    This app tracks every stop on London's Circle Line pub crawl.<br><br>
-    Your job? Show up, drink up, tick it off. 🍺<br><br>
-    <span style="color:var(--muted);">The admin checks pubs off as you go.</span>
-  </div>
-</div>
-
-<!-- Tips -->
-<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
-
-  <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
-    <span style="font-size:28px;flex-shrink:0;">📷</span>
-    <div>
-      <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">Snap your pint</div>
-      <div style="font-size:17px;color:var(--muted);line-height:1.5;">Tap the 📷 button on any pub row to immortalise your pint. Shared with the group.</div>
+    <!-- The pitch -->
+    <div style="background:rgba(255,211,41,0.08);border:1px solid rgba(255,211,41,0.2);border-radius:16px;padding:20px;margin-bottom:12px;text-align:left;">
+      <div style="font-size:26px;font-weight:900;color:var(--yellow);margin-bottom:10px;font-family:'Black Han Sans',sans-serif;letter-spacing:1px;">27 pubs. One circle. No excuses.</div>
+      <div style="font-size:17px;color:var(--text);line-height:1.7;">
+        This app tracks every stop on London's Circle Line pub crawl.<br><br>
+        Your job? Show up, drink up, tick it off. 🍺<br><br>
+        <span style="color:var(--muted);">The admin checks pubs off as you go.</span>
+      </div>
     </div>
-  </div>
 
-  <div style="background:rgba(255,211,41,0.06);border:1px solid rgba(255,211,41,0.2);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
-    <span style="font-size:28px;flex-shrink:0;">🔔</span>
-    <div>
-      <div style="font-size:20px;font-weight:700;color:var(--yellow);margin-bottom:4px;">Turn on notifications</div>
-      <div style="font-size:17px;color:var(--muted);line-height:1.5;">Get buzzed 10 mins before you need to leave each pub. Your liver will thank you later.</div>
+    <!-- Tips -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+
+      <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:28px;flex-shrink:0;">📷</span>
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">Snap your pint</div>
+          <div style="font-size:17px;color:var(--muted);line-height:1.5;">Tap the 📷 button on any pub row to immortalise your pint. Shared with the group.</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,211,41,0.06);border:1px solid rgba(255,211,41,0.2);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:28px;flex-shrink:0;">🔔</span>
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--yellow);margin-bottom:4px;">Turn on notifications</div>
+          <div style="font-size:17px;color:var(--muted);line-height:1.5;">Get buzzed 10 mins before you need to leave each pub. Your liver will thank you later.</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:28px;flex-shrink:0;">📱</span>
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">iPhone? Add to Home Screen</div>
+          <div style="font-size:17px;color:var(--muted);line-height:1.5;">Safari → Share → Add to Home Screen. Notifications only work as a home screen app.</div>
+        </div>
+      </div>
+
     </div>
-  </div>
 
-  <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
-    <span style="font-size:28px;flex-shrink:0;">📱</span>
-    <div>
-      <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">iPhone? Add to Home Screen</div>
-      <div style="font-size:17px;color:var(--muted);line-height:1.5;">Safari → Share → Add to Home Screen. Notifications only work as a home screen app.</div>
+    <!-- Map app picker -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:10px;">Open directions in</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="setMapApp('google')" id="mapBtn-google"
+          style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
+          🗺️ Google Maps
+        </button>
+        <button onclick="setMapApp('apple')" id="mapBtn-apple"
+          style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
+          🍎 Apple Maps
+        </button>
+
+      </div>
     </div>
-  </div>
 
-</div>
 
-<!-- Map app picker -->
-<div style="margin-bottom:16px;">
-  <div style="font-size:15px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:10px;">Open directions in</div>
-  <div style="display:flex;gap:8px;">
-    <button onclick="setMapApp('google')" id="mapBtn-google"
-      style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
-      🗺️ Google Maps
+    <button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
+      START THE CRAWL 🍺
     </button>
-    <button onclick="setMapApp('apple')" id="mapBtn-apple"
-      style="flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
-      🍎 Apple Maps
-    </button>
-
-  </div>
-</div>
-
-
-<button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
-  START THE CRAWL 🍺
-</button>
-<div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v1.1</strong></div>
-```
+    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v1.1</strong></div>
 
   </div>
 </div>
 
 <!-- ══ MAIN APP ══ -->
-
 <header>
   <div class="roundel"><span class="roundel-text">PUB<br>CRAWL</span></div>
   <div class="header-info">
@@ -300,7 +294,7 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
   <!-- All info sticky at top, position calculated by JS -->
   <div id="trackerSticky" style="position:sticky;top:0;z-index:98;background:var(--dark);border-bottom:1px solid var(--border);">
     <div id="countdownBanner" style="background:rgba(255,211,41,0.1);padding:8px 16px;text-align:center;border-bottom:1px solid rgba(255,211,41,0.2);">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:1px;">LEAVE CURRENT PUB IN</div>
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:1px;" id="countdownHeaderLabel">LEAVE CURRENT PUB IN</div>
       <div id="countdownTimer" style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:var(--yellow);letter-spacing:3px;line-height:1.1;">--:--</div>
       <div id="countdownLabel" style="font-size:11px;color:var(--muted);margin-top:1px;"></div>
     </div>
@@ -321,6 +315,7 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
     </div>
   </div>
 
+
 </div>
 
 <div class="panel" id="panel-photos" style="padding:16px;">
@@ -339,29 +334,68 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
   </div>
   <div id="adminPanel" style="display:none;padding:16px;">
 
-```
-<div class="pace-section">
-  <h3>⏱ Timeline</h3>
-  <div class="pace-row">
-    <span class="pace-label">Start time</span>
-    <input class="pace-input" type="time" id="startTime" value="10:00" oninput="appStartTime=this.value;calcPace()">
-  </div>
-  <div class="pace-row">
-    <span class="pace-label">Mins per pub</span>
-    <input class="pace-input" type="number" id="minsPerPub" value="20" min="5" max="120" oninput="appMinsPerPub=parseInt(this.value)||20;calcPace()" style="width:70px;">
-  </div>
-  <div class="pace-result" id="paceResult">Set your times above!</div>
-</div>
+    <div class="pace-section">
+      <h3>⏱ Timeline</h3>
+      <div class="pace-row">
+        <span class="pace-label">Start pub</span>
+        <select class="pace-input" id="startPub" onchange="saveCrawlSettings()" style="width:180px;background:var(--border);border:1px solid #444;border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;padding:8px 10px;">
+          <option value="1">#1 The Shakespeare</option>
+          <option value="2">#2 The Old Star</option>
+          <option value="3">#3 St Stephen's Tavern</option>
+          <option value="4">#4 Princess of Wales</option>
+          <option value="5">#5 Temple Brew House</option>
+          <option value="6">#6 The Blackfriar</option>
+          <option value="7">#7 Ye Olde Watling</option>
+          <option value="8">#8 Cannick Tapps</option>
+          <option value="9">#9 The Monument</option>
+          <option value="10">#10 The Minories</option>
+          <option value="11">#11 Hoop and Grapes</option>
+          <option value="12">#12 Hamilton Hall</option>
+          <option value="13">#13 The Globe</option>
+          <option value="14">#14 The Shakespeare</option>
+          <option value="15">#15 The Castle</option>
+          <option value="16">#16 The Parcel Yard</option>
+          <option value="17">#17 The Euston Tap</option>
+          <option value="18">#18 The Albany</option>
+          <option value="19">#19 The Metropolitan Bar</option>
+          <option value="20">#20 The Chapel</option>
+          <option value="21">#21 Sawyers Arms</option>
+          <option value="22">#22 Bayswater Arms</option>
+          <option value="23">#23 Old Swan</option>
+          <option value="24">#24 The Britannia</option>
+          <option value="25">#25 The Stanhope Arms</option>
+          <option value="26">#26 Hoop &amp; Toy</option>
+          <option value="27">#27 The Antelope</option>
+        </select>
+      </div>
+      <div class="pace-row">
+        <span class="pace-label">Start time</span>
+        <input class="pace-input" type="time" id="startTime" value="10:00" oninput="saveCrawlSettings()">
+      </div>
+      <div class="pace-row">
+        <span class="pace-label">Mins per pub</span>
+        <input class="pace-input" type="number" id="minsPerPub" value="20" min="5" max="120" oninput="saveCrawlSettings()" style="width:70px;">
+      </div>
+      <div class="pace-result" id="paceResult">Set your times above!</div>
+
+    </div>
 
 
 
-<div class="pace-section" style="margin-top:12px;">
-  <h3>🔔 Notifications</h3>
-  <div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Get a buzz when it's time to leave a pub.</div>
-  <button id="notifBtn" onclick="requestNotifications()" class="pw-submit" style="width:100%;margin-bottom:8px;">Enable Notifications</button>
-  <div id="notifStatus" style="font-size:12px;color:var(--muted);text-align:center;"></div>
-</div>
-```
+    <div class="pace-section" style="margin-top:12px;">
+      <h3>🚇 Travel</h3>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Manually start the travel countdown to the next pub.</div>
+      <button onclick="adminStartTravel()" id="travelBtn" class="pw-submit" style="width:100%;margin-bottom:8px;background:var(--blue);">🚇 Start Travel Countdown</button>
+      <button onclick="adminStopTravel()" style="width:100%;padding:10px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">↩️ Back to Pub Timer</button>
+    </div>
+
+    <div class="pace-section" style="margin-top:12px;">
+      <h3>🔔 Notifications</h3>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Get a buzz when it's time to leave a pub.</div>
+      <button id="notifBtn" onclick="requestNotifications()" class="pw-submit" style="width:100%;margin-bottom:8px;">Enable Notifications</button>
+      <div id="notifStatus" style="font-size:12px;color:var(--muted);text-align:center;"></div>
+    </div>
+
 
   </div>
 </div>
@@ -370,7 +404,6 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
 <div class="toast" id="toast"></div>
 
 <!-- ══ CHECK-IN MODAL ══ -->
-
 <div class="modal-overlay" id="modalOverlay" onclick="bgClose(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -392,7 +425,6 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
 </div>
 
 <!-- ══ ADMIN PASSWORD MODAL ══ -->
-
 <div class="pw-modal" id="pwModal">
   <div class="pw-box">
     <div class="pw-title">🔐 Admin Access</div>
@@ -404,16 +436,13 @@ footer{text-align:center;padding:20px;color:var(–muted);font-size:11px;font-fa
 </div>
 
 <!-- ══ LIGHTBOX ══ -->
-
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close">✕</button>
   <img id="lightboxImg" src="" alt="">
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
 // ── TOAST (defined first so available everywhere) ──
 let toastTimer;
@@ -428,21 +457,35 @@ function showToast(msg) {
 // Firebase initialised below after state declarations
 
 async function fbRead() {
+  if (fbSaving) return; // don't overwrite mid-save
   try {
     const res = await fetch(FB_URL + '?t=' + Date.now());
     if (!res.ok) return;
     const data = await res.json();
     if (!data) return;
     // Only skip if the data hasn't meaningfully changed (checkins + visited)
-    const str = JSON.stringify(data);
+    const str = JSON.stringify({ v: data.visited, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub });
     if (str === lastFbData) return;
     lastFbData = str;
     const remotePlayers = Array.isArray(data.players) ? data.players : (data.players ? Object.values(data.players) : []);
     if (remotePlayers.length >= players.length) players = remotePlayers;
-    visited      = Array.isArray(data.visited) ? data.visited : (data.visited ? Object.values(data.visited) : visited);
-    playerVisits = data.playerVisits || playerVisits;
+    const remoteVisited = Array.isArray(data.visited) ? data.visited.map(Number) : (data.visited ? Object.values(data.visited).map(Number) : []);
+    visited = remoteVisited;
+    // Rebuild playerVisits from visited
+    playerVisits = {};
+    visited.forEach(s => { playerVisits[s] = [0]; });
     adminCurrentStop = data.adminCurrentStop || null;
     checkinTimes = data.checkinTimes || checkinTimes;
+    if (data.appStartTime) appStartTime = data.appStartTime;
+    if (data.appMinsPerPub) appMinsPerPub = data.appMinsPerPub;
+    if (data.appStartPub) appStartPub = data.appStartPub;
+    // Apply to inputs if visible
+    const stEl = document.getElementById('startTime');
+    const mpEl = document.getElementById('minsPerPub');
+    const spEl = document.getElementById('startPub');
+    if (stEl) stEl.value = appStartTime;
+    if (mpEl) mpEl.value = appMinsPerPub;
+    if (spEl) spEl.value = appStartPub;
     // Always merge photos — combine Firebase + local so all phones see all photos
     if (data.pubPhotos) {
       Object.keys(data.pubPhotos).forEach(stop => {
@@ -455,6 +498,7 @@ async function fbRead() {
     saveLocal();
     // Always recalculate schedule and re-render for ALL users
     calcPace();
+    renderTracker();
     if (adminUnlocked) renderAdminPanel();
   } catch(e) { console.warn('FB read error', e); }
 }
@@ -464,14 +508,20 @@ function fbListen() {
   fbPollInterval = setInterval(fbRead, 1500); // poll every 1.5s for reliable sync
 }
 
+let fbSaving = false;
 async function fbSave() {
+  fbSaving = true;
   try {
-    const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes });
+    // Keep playerVisits in sync with visited
+    playerVisits = {};
+    visited.forEach(s => { playerVisits[s] = [0]; });
+    const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes, appStartTime, appMinsPerPub, appStartPub });
     // Update skip-check with same fields fbRead uses
-    lastFbData = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes });
+    lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
+  finally { setTimeout(() => { fbSaving = false; }, 1000); } // wait 1s before allowing reads
 }
 
 function saveLocal() {
@@ -666,16 +716,24 @@ const SURVIVAL = [
   [27, "COMPLETED IT MATE. 27 pubs. Absolute royalty 🏆👑🎉"],
 ];
 
-// ── STATE ──
-let players      = JSON.parse(localStorage.getItem('clp_players')  || '[]');
-let visited      = JSON.parse(localStorage.getItem('clp_visited')  || '[]');
-let playerVisits = JSON.parse(localStorage.getItem('clp_pvisits')  || '{}');
-let pubPhotos    = JSON.parse(localStorage.getItem('clp_photos')   || '{}');
-let currentUser  = localStorage.getItem('clp_currentUser') || null;
+// ── STATE ── always fresh — Firebase is source of truth
+let players      = [];
+let visited      = [];
+let playerVisits = {};
+let pubPhotos    = {};
+let currentUser  = null;
 let adminUnlocked = false;
 let modalStop = null;
-let adminCurrentStop = JSON.parse(localStorage.getItem('clp_currentStop') || 'null');
-let checkinTimes = JSON.parse(localStorage.getItem('clp_checkinTimes') || '{}');
+let adminCurrentStop = null;
+let checkinTimes = {};
+
+// ── CRAWL SETTINGS (synced via Firebase) ──
+let appStartTime = '10:00';
+let appMinsPerPub = 20;
+let appStartPub = 1;
+let travelMode = false; // true when group is travelling between pubs
+let travelStartTime = null; // when travel started (mins)
+let travelFromStop = null; // which stop we just left
 
 // ── FIREBASE REST API (no SDK needed) ──
 const FB_URL = 'https://circle-line-crawl-53191-default-rtdb.europe-west1.firebasedatabase.app/crawl.json';
@@ -725,10 +783,12 @@ function selectUser(name) { startApp(); }
 
 // ── TRACKER ──
 function getSchedule() {
-  const s = document.getElementById('startTime').value || '10:00';
-  const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
-  const startPubEl = document.getElementById('startPub');
-  const startPub = startPubEl ? parseInt(startPubEl.value) || 1 : 1;
+  const stEl = document.getElementById('startTime');
+  const mpEl = document.getElementById('minsPerPub');
+  const spEl = document.getElementById('startPub');
+  const s = (stEl && stEl.value) ? stEl.value : appStartTime;
+  const mpp = (mpEl && mpEl.value) ? parseInt(mpEl.value) || 20 : appMinsPerPub;
+  const startPub = (spEl && spEl.value) ? parseInt(spEl.value) || 1 : appStartPub;
   const [sh, sm] = s.split(':').map(Number);
   const startMins = sh * 60 + sm;
   const schedule = [];
@@ -752,68 +812,69 @@ function getSchedule() {
 
 function toggleCheckin(stop) {
   if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
-  const ci = currentPlayerIndex();
-  if (!playerVisits[stop]) playerVisits[stop] = [];
-  const vi = playerVisits[stop].indexOf(ci);
-  if (vi === -1) {
-    playerVisits[stop].push(ci);
-    if (!visited.includes(stop)) visited.push(stop);
-    // Record actual arrival time
+  const stopNum = Number(stop);
+  // Always coerce visited to numbers to prevent string/number mismatch
+  visited = visited.map(Number);
+  const isDone = visited.some(v => Number(v) === stopNum || String(v) === String(stopNum));
+  if (!isDone) {
+    // CHECK IN
+    visited.push(stopNum);
+    playerVisits[stopNum] = [0];
     const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-    checkinTimes[stop] = nowMins;
-    // Update start time to earliest actual check-in
+    checkinTimes[stopNum] = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    // Set start time to earliest checkin
     const earliest = Math.min(...Object.values(checkinTimes));
-    const eh = Math.floor(earliest / 60);
-    const em = Math.floor(earliest % 60);
     const startEl = document.getElementById('startTime');
-    if (startEl) startEl.value = eh.toString().padStart(2,'0') + ':' + em.toString().padStart(2,'0');
-    showToast('🍺 Stop #' + stop + ' checked in!');
+    if (startEl) startEl.value = Math.floor(earliest/60).toString().padStart(2,'0') + ':' + Math.floor(earliest%60).toString().padStart(2,'0');
+    showToast('🍺 Stop #' + stopNum + ' checked in!');
   } else {
-    playerVisits[stop].splice(vi, 1);
-    if (!playerVisits[stop].length) {
-      visited = visited.filter(s => s !== stop);
-      delete playerVisits[stop];
-    }
-    delete checkinTimes[stop];
+    // UNDO — remove from all state
+    visited = visited.filter(s => Number(s) !== stopNum && String(s) !== String(stopNum));
+    delete playerVisits[stopNum];
+    delete checkinTimes[stopNum];
     if (Object.keys(checkinTimes).length === 0) {
       const startEl = document.getElementById('startTime');
       if (startEl) startEl.value = '10:00';
     }
-    showToast('Unchecked stop #' + stop);
+    showToast('↩️ Stop #' + stopNum + ' unchecked');
   }
   const row = document.getElementById('pub-' + stop);
   if (row) row.classList.add('just-done');
   save();
-  calcPace(); // always recalculate — updates Est. finish + all pub times
+  calcPace();
 }
 
 function renderTracker() {
   const grid = document.getElementById('pubsGrid');
   grid.innerHTML = '';
   const schedule = getSchedule();
-  PUBS.forEach(pub => {
-    const visitors = playerVisits[pub.stop] || [];
-    const globalDone = visited.includes(pub.stop) || visitors.length > 0;
+  const spElR = document.getElementById('startPub');
+  const startPubNum = (spElR && spElR.value) ? parseInt(spElR.value) || 1 : appStartPub;
+  const orderedPubs = [...PUBS.slice(startPubNum - 1), ...PUBS.slice(0, startPubNum - 1)];
+  orderedPubs.forEach((pub, idx) => {
+    const displayStop = idx + 1;
+    const globalDone = visited.includes(pub.stop);
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
     const isCurrent = false;
     // Find the next uncompleted pub after the last completed one
-    const allDoneStops = new Set([...visited, ...Object.keys(playerVisits).filter(k => playerVisits[k].length > 0).map(Number)]);
-    const lastDone = Math.max(0, ...[...allDoneStops]);
-    const isNextTarget = !globalDone && pub.stop === lastDone + 1;
+    // Find the next uncompleted pub in display order
+    const allDoneStops = new Set(visited.map(Number));
+    const lastDoneIdx = orderedPubs.reduce((best, p, i) => allDoneStops.has(p.stop) ? i : best, -1);
+    const isNextTarget = !globalDone && idx === lastDoneIdx + 1;
     row.className = 'pub-row' + (globalDone ? ' done' : '') + (isNextTarget ? ' next-target' : '');
     row.id = 'pub-' + pub.stop;
     const avatars = ''; // removed player avatars
     const thumb = photos.length ? '<img class="pub-thumb" src="' + photos[photos.length-1] + '" alt="pint">' : '';
     const sched = schedule[pub.stop - 1];
-    const timeLabel = sched.skipped ? '' : '<span class="pub-time">' + fmtTime(sched.arrive) + '</span>';
+    const crawlStarted = Object.keys(checkinTimes).length > 0;
+    const timeLabel = (sched.skipped || !crawlStarted) ? '' : '<span class="pub-time">' + fmtTime(sched.arrive) + '</span>';
     row.innerHTML =
-      '<div class="stop-num">' + pub.stop + '</div>' +
+      '<div class="stop-num">' + displayStop + '</div>' +
       '<div class="circle-dot"></div>' +
       '<div class="pub-info">' +
         '<div class="pub-name-row"><span class="pub-name">' + pub.name + '</span>' + timeLabel + '</div>' +
-        '<div class="pub-station">' + pub.station + (sched.skipped ? '' : ' · leave ' + fmtTime(sched.leave)) + '</div>' +
+        '<div class="pub-station">' + pub.station + (sched.skipped || !crawlStarted ? '' : ' · leave ' + fmtTime(sched.leave)) + '</div>' +
         (avatars ? '<div class="checkin-avatars">' + avatars + '</div>' : '') +
       '</div>' +
       thumb +
@@ -836,7 +897,7 @@ function renderTracker() {
 }
 
 function updateProgress() {
-  const allDone = new Set([...visited, ...Object.keys(playerVisits).filter(k => playerVisits[k].length > 0).map(Number)]);
+  const allDone = new Set(visited.map(Number));
   const n = allDone.size;
   document.getElementById('headerCount').textContent = n + '/27';
   document.getElementById('progressFill').style.width = (n/27*100) + '%';
@@ -852,13 +913,22 @@ function updateProgress() {
     banner.style.borderLeft = '3px solid #4a9eff';
     banner.style.background = 'rgba(74,158,255,0.1)';
 
-    const checkedStops = PUBS.filter(p => visited.includes(p.stop) || (playerVisits[p.stop] && playerVisits[p.stop].length > 0));
-    if (checkedStops.length > 0) {
-      const lastStop = checkedStops[checkedStops.length - 1];
-      const nextPub = PUBS.find(p => p.stop === lastStop.stop + 1);
+    // Find all checked stop numbers
+    const checkedNums = new Set([
+      ...visited,
+      ...Object.keys(playerVisits).filter(k => playerVisits[k].length > 0).map(Number)
+    ]);
+
+    if (checkedNums.size > 0) {
+      // Find the highest checked stop number
+      const maxChecked = Math.max(...checkedNums);
+      // Next pub is the first unchecked pub after the highest checked one
+      const nextPub = PUBS.find(p => p.stop > maxChecked && !checkedNums.has(p.stop));
       if (nextPub) {
         banner.style.display = 'block';
-        banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Next stop</span> &nbsp;🚇&nbsp; #' + nextPub.stop + ' ' + nextPub.name + ' · ' + nextPub.station;
+        const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nextPub.q);
+        banner.innerHTML = '<span style="opacity:0.7;font-weight:400;">Next stop</span> &nbsp;🚇&nbsp; #' + nextPub.stop + ' ' + nextPub.name + ' · ' + nextPub.station +
+          ' &nbsp;<a href="' + mapUrl + '" target="_blank" onclick="event.stopPropagation()" style="color:#4a9eff;text-decoration:none;font-size:18px;">📍</a>';
       } else {
         banner.style.display = 'block';
         banner.style.color = '#FFD329';
@@ -1137,6 +1207,8 @@ function updateModalAdminBtn() {
 }
 
 // ── ADMIN TAB ──
+
+
 function submitAdminTabPassword() {
   const inp = document.getElementById('adminTabPwInput');
   if (inp.value === ADMIN_PASSWORD) {
@@ -1152,6 +1224,8 @@ function submitAdminTabPassword() {
   }
 }
 
+
+
 function submitAdminTabPassword() {
   const inp = document.getElementById('adminTabPwInput');
   if (inp.value === ADMIN_PASSWORD) {
@@ -1165,6 +1239,40 @@ function submitAdminTabPassword() {
     inp.value = '';
     setTimeout(() => inp.classList.remove('error'), 600);
   }
+}
+
+
+
+function adminStartTravel() {
+  if (visited.length === 0) { showToast('Check in at a pub first!'); return; }
+  const now = new Date();
+  travelMode = true;
+  travelStartTime = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  // Find last checked stop
+  let lastStop = 0;
+  for (let i = 0; i < 27; i++) {
+    if (visited.some(v => Number(v) === i + 1)) lastStop = i + 1;
+  }
+  travelFromStop = lastStop;
+  showToast('🚇 Travel countdown started!');
+}
+
+function adminStopTravel() {
+  travelMode = false;
+  travelStartTime = null;
+  travelFromStop = null;
+  showToast('↩️ Back to pub timer');
+}
+
+function saveCrawlSettings() {
+  const stEl = document.getElementById('startTime');
+  const mpEl = document.getElementById('minsPerPub');
+  const spEl = document.getElementById('startPub');
+  if (stEl) appStartTime = stEl.value;
+  if (mpEl) appMinsPerPub = parseInt(mpEl.value) || 20;
+  if (spEl) appStartPub = parseInt(spEl.value) || 1;
+  save();
+  calcPace();
 }
 
 function lockAdmin() {
@@ -1314,10 +1422,10 @@ function fire10MinWarning(pubName) {
   });
 }
 
-function fireLeaveNotification(pubName, nextStation) {
+function fireLeaveNotification(pubName, nextPubName) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   new Notification('🚇 Time to leave! ' + pubName, {
-    body: 'Head to ' + nextStation + ' station now',
+    body: 'Head to ' + nextPubName + ' now',
     icon: '',
     tag: 'leave-now',
     renotify: true
@@ -1425,48 +1533,69 @@ function calcPace() {
   if (!s) return;
   const [sh, sm] = s.split(':').map(Number);
   const startMins = sh * 60 + sm;
-  const schedule = getSchedule(); // uses actual checkin times
-  const last = schedule[26];
-  const totalMins = last.leave - startMins;
-  const h = Math.floor(totalMins / 60), m = totalMins % 60;
-  const finishTime = fmtTime(last.leave);
+  const realSchedule = getSchedule(); // uses actual checkin times
+  const lastSched = realSchedule[realSchedule.length - 1];
+  const totalMins = lastSched.leave - startMins;
+  const h = Math.floor(Math.abs(totalMins) / 60), m = Math.abs(totalMins) % 60;
+  const finishTime = fmtTime(lastSched.leave);
 
-  document.getElementById('paceResult').innerHTML =
+  const paceResultEl = document.getElementById('paceResult');
+  if (paceResultEl) paceResultEl.innerHTML =
     'Total time: <strong>' + h + 'h ' + m + 'm</strong> &nbsp;·&nbsp; ' +
     'Finish: <strong>~' + finishTime + '</strong><br>' +
     (mpp < 15 ? '⚠️ Very tight pace!' : mpp < 25 ? '✅ Solid pace!' : '😌 Nice and leisurely.');
 
-  // Use getSchedule() which includes actual checkin times
-  const realSchedule = getSchedule();
   startCountdown(realSchedule, mpp);
 
-  // Update tracker pace summary
+  // Update est finish summary
   const summary = document.getElementById('trackerPaceSummary');
   if (summary) {
-    const checkedCount = PUBS.filter(p =>
-      visited.includes(p.stop) || (playerVisits[p.stop] && playerVisits[p.stop].length > 0)
-    ).length;
+    const checkedNums = new Set([
+      ...visited,
+      ...Object.keys(playerVisits).filter(k => playerVisits[k].length > 0).map(Number)
+    ]);
+    const checkedCount = checkedNums.size;
+    const plainSchedule = buildSchedule(startMins, mpp);
+    const scheduledFinish = plainSchedule[plainSchedule.length - 1].leave;
 
-    // Est finish = last stop's leave time from real schedule
-    const estFinish = fmtTime(realSchedule[26].leave);
+    let realFinish = scheduledFinish;
+    let paceNote = mpp < 15 ? '⚠️ Very tight!' : mpp < 25 ? '✅ Solid pace!' : '😌 Easy does it';
 
-    // Pace note — compare real finish vs scheduled finish
-    const scheduledFinish = schedule[26].leave;
-    const realFinish = realSchedule[26].leave;
-    const diff = Math.round(realFinish - scheduledFinish);
-    let paceNote = checkedCount === 0
-      ? (mpp < 15 ? '⚠️ Very tight!' : mpp < 25 ? '✅ Solid pace!' : '😌 Easy does it')
-      : diff < -10 ? '🔥 Flying!'
-      : diff <= 10 ? '✅ On track'
-      : '🐢 ' + Math.abs(diff) + 'm behind';
+    if (checkedCount === 0) {
+      summary.innerHTML = 'Est. finish: <strong style="color:var(--yellow);">not started</strong>';
+      return;
+    }
 
-    summary.innerHTML =
-      'Done: <strong style="color:var(--text);">' + checkedCount + '/27</strong>' +
-      ' &nbsp;·&nbsp; Est. finish: <strong style="color:var(--yellow);">~' + estFinish + '</strong>' +
-      ' &nbsp;' + paceNote;
+    if (checkedCount > 0) {
+      // Use checkinTimes directly — most reliable source
+      const checkinStops = Object.keys(checkinTimes).map(Number).sort((a,b) => a - b);
+      if (checkinStops.length > 0) {
+        const lastCheckedStop = checkinStops[checkinStops.length - 1];
+        const lastActualTime = checkinTimes[lastCheckedStop];
+        // Project: from last actual arrival, add mpp to leave, then travel+mpp for each remaining pub
+        let proj = lastActualTime + mpp;
+        for (let i = lastCheckedStop; i < 27; i++) {
+          proj += (TRAVEL_MINS[i] || 0) + mpp;
+        }
+        realFinish = proj;
+        const diff = Math.round(realFinish - scheduledFinish);
+        paceNote = diff < -10 ? '🔥 Flying!'
+          : diff <= 10 ? '✅ On track'
+          : '🐢 ' + Math.abs(diff) + 'm behind';
+      }
+    }
+
+    if (checkedCount === 0) {
+      summary.innerHTML = 'Est. finish: <strong style="color:var(--yellow);">Not started</strong>';
+    } else {
+      summary.innerHTML =
+        'Done: <strong style="color:var(--text);">' + checkedCount + '/27</strong>' +
+        ' &nbsp;·&nbsp; Est. finish: <strong style="color:var(--yellow);">~' + fmtTime(realFinish) + '</strong>' +
+        ' &nbsp;' + paceNote;
+    }
   }
 
-  // Re-render tracker so pub times update
+  // Re-render tracker so pub times + next stop banner update
   renderTracker();
 }
 
@@ -1478,78 +1607,97 @@ function startCountdown(schedule, minsPerPub) {
   const _minsPerPub = minsPerPub; // capture for tick closure
 
   function tick() {
-    const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-
-    // Find current pub — prefer last actually checked-in stop, fall back to schedule
-    let currentIdx = -1;
-    // First check actual check-ins
-    for (let i = 0; i < 27; i++) {
-      if (visited.includes(i + 1) || (playerVisits[i + 1] && playerVisits[i + 1].length > 0)) {
-        currentIdx = i;
-      }
-    }
-    // If nothing checked in yet, use schedule time
-    if (currentIdx === -1) {
-      for (let i = 0; i < schedule.length; i++) {
-        if (nowMins >= schedule[i].arrive) currentIdx = i;
-      }
-    }
-
-    if (currentIdx === -1) {
-      // Haven't started yet
-      const minsToStart = schedule[0].arrive - nowMins;
-      timerEl.style.color = 'var(--yellow)';
-      const totalSecs = Math.round(minsToStart * 60);
-      const mm = Math.floor(totalSecs / 60), ss = totalSecs % 60;
-      timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
-      labelEl.textContent = 'Until crawl starts at ' + fmtTime(schedule[0].arrive);
+    // ── STATE 0: Not started ──
+    if (visited.length === 0) {
+      banner.style.background = 'rgba(255,211,41,0.1)';
+      banner.style.borderTop = '1px solid rgba(255,211,41,0.4)';
+      document.getElementById('countdownHeaderLabel').textContent = 'CRAWL STATUS';
+      timerEl.style.color = 'var(--muted)';
+      timerEl.textContent = '--:--';
+      labelEl.textContent = 'Not started yet';
       return;
     }
 
-    const cur = schedule[currentIdx];
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
 
-    if (currentIdx === 26 && nowMins >= cur.leave) {
-      // All done!
+    // Find last checked-in pub index
+    const visitedNums = visited.map(Number);
+    let currentIdx = -1;
+    for (let i = 0; i < 27; i++) {
+      if (visitedNums.includes(i + 1)) currentIdx = i;
+    }
+    if (currentIdx === -1) return;
+
+    const cur = schedule[currentIdx];
+    const nextPubIdx = currentIdx + 1;
+    const nextPub = nextPubIdx < 27 ? PUBS[nextPubIdx] : null;
+    const travelMins = TRAVEL_MINS[currentIdx] || 0;
+    
+    // Travel mode: triggered when leave time has passed OR admin manually set travelMode
+    const actualArrival = checkinTimes[cur.stop] !== undefined ? checkinTimes[cur.stop] : cur.arrive;
+    const actualLeave = actualArrival + _minsPerPub;
+    const secsUntilLeave = Math.round((actualLeave - nowMins) * 60);
+    const travelEndMins = actualLeave + travelMins;
+    const secsUntilArrival = Math.round((travelEndMins - nowMins) * 60);
+
+    // ── STATE 3: All done ──
+    if (currentIdx === 26) {
+      banner.style.background = 'rgba(255,211,41,0.1)';
+      banner.style.borderTop = '1px solid var(--yellow)';
+      document.getElementById('countdownHeaderLabel').textContent = 'CRAWL COMPLETE';
       timerEl.textContent = '🏆';
       timerEl.style.color = 'var(--yellow)';
-      labelEl.textContent = 'Crawl complete! Legends.';
+      labelEl.textContent = 'All 27 pubs done! Absolute legends.';
       clearInterval(countdownInterval);
       return;
     }
 
-    // Use actual check-in time if available, else scheduled arrive time
-    const actualArrival = checkinTimes[cur.stop] !== undefined ? checkinTimes[cur.stop] : cur.arrive;
-    const actualLeave = actualArrival + _minsPerPub;
-    const secsLeft = Math.round((actualLeave - nowMins) * 60);
-    // Show early/late status
-    const diffMins = checkinTimes[cur.stop] !== undefined
-      ? Math.round(checkinTimes[cur.stop] - cur.arrive) : null;
-    const earlyLate = diffMins === null ? ''
-      : diffMins < -1 ? ' · ⚡ ' + Math.abs(diffMins) + 'm early'
-      : diffMins > 1  ? ' · 🐢 ' + diffMins + 'm late'
-      : '';
-
-    banner.style.display = 'block';
-
-    // 10-min warning
-    if (secsLeft >= 599 && secsLeft <= 601) {
-      fire10MinWarning(PUBS[currentIdx].name);
-    }
-    if (secsLeft < 0) {
-      // Overdue — should have left already
-      const overdueMin = Math.round(-secsLeft / 60);
-      if (secsLeft >= -61 && secsLeft < 0) fireLeaveNotification(PUBS[currentIdx].name, currentIdx < 26 ? PUBS[currentIdx+1].station : 'the finish');
-      timerEl.textContent = '-' + String(Math.floor(Math.abs(secsLeft) / 60)).padStart(2,'0') + ':' + String(Math.abs(secsLeft) % 60).padStart(2,'0');
-      timerEl.style.color = '#ff4444';
-      labelEl.textContent = '⚠️ ' + overdueMin + 'm overdue! Head to ' + PUBS[currentIdx].station + ' now';
-    } else {
-      const mm = Math.floor(secsLeft / 60), ss = secsLeft % 60;
+    // ── STATE 2: Travelling to next pub ──
+    if (secsUntilLeave <= 0 && secsUntilArrival > 0 && nextPub) {
+      banner.style.background = 'rgba(255,211,41,0.12)';
+      banner.style.borderTop = '1px solid rgba(255,211,41,0.5)';
+      document.getElementById('countdownHeaderLabel').textContent = 'HEAD TO NEXT PUB IN';
+      const mm = Math.floor(secsUntilArrival / 60), ss = secsUntilArrival % 60;
       timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
-      timerEl.style.color = secsLeft < 180 ? '#ff9944' : 'var(--yellow)';
-      if (currentIdx < 26) {
-        labelEl.textContent = 'Stop #' + cur.stop + ' ' + PUBS[currentIdx].name + earlyLate + ' → leave by ' + fmtTime(actualLeave);
+      timerEl.style.color = 'var(--yellow)';
+      labelEl.textContent = '🚇 Head to ' + nextPub.name;
+      // Fire leave notification once
+      if (secsUntilLeave >= -61 && secsUntilLeave <= 0) {
+        fireLeaveNotification(PUBS[currentIdx].name, nextPub.name);
       }
+      return;
+    }
+
+    // ── STATE 2b: Should have arrived at next pub ──
+    if (secsUntilArrival <= 0 && secsUntilLeave <= 0 && nextPub) {
+      banner.style.background = 'rgba(227,23,62,0.12)';
+      banner.style.borderTop = '1px solid rgba(227,23,62,0.5)';
+      document.getElementById('countdownHeaderLabel').textContent = 'YOU SHOULD BE AT';
+      timerEl.textContent = '📍';
+      timerEl.style.color = 'var(--red)';
+      labelEl.textContent = '✅ ' + nextPub.name + ' — check in when ready!';
+      return;
+    }
+
+    // ── STATE 1: At the pub — countdown to leave ──
+    banner.style.background = 'rgba(0,179,107,0.12)';
+    banner.style.borderTop = '1px solid rgba(0,179,107,0.5)';
+    document.getElementById('countdownHeaderLabel').textContent = 'LEAVE CURRENT PUB IN';
+
+    // 10 min warning notification
+    if (secsUntilLeave >= 599 && secsUntilLeave <= 601) fire10MinWarning(PUBS[currentIdx].name);
+
+    if (secsUntilLeave <= 0) {
+      const overdueMin = Math.round(-secsUntilLeave / 60);
+      timerEl.textContent = '-' + String(Math.floor(Math.abs(secsUntilLeave) / 60)).padStart(2,'0') + ':' + String(Math.abs(secsUntilLeave) % 60).padStart(2,'0');
+      timerEl.style.color = '#ff4444';
+      labelEl.textContent = '⚠️ ' + overdueMin + 'm overdue! Leave ' + PUBS[currentIdx].name + ' now!';
+    } else {
+      const mm = Math.floor(secsUntilLeave / 60), ss = secsUntilLeave % 60;
+      timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+      timerEl.style.color = 'var(--green)';
+      labelEl.textContent = 'At ' + PUBS[currentIdx].name + ' → leave by ' + fmtTime(actualLeave);
     }
   }
 
@@ -1618,8 +1766,10 @@ window.addEventListener('resize', fixStickyTop);
 fbListen();
 renderTracker();
 calcPace();
+// Keep times live before crawl starts
+setInterval(() => { if (Object.keys(checkinTimes).length === 0) calcPace(); }, 60000);
+// Update every minute so live times stay current
 setInterval(calcPace, 60000);
 </script>
-
 </body>
 </html>

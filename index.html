@@ -386,6 +386,7 @@
       <h3>🚇 Travel</h3>
       <div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Manually start the travel countdown to the next pub.</div>
       <button onclick="adminStartTravel()" id="travelBtn" class="pw-submit" style="width:100%;margin-bottom:8px;background:var(--blue);">🚇 Start Travel Countdown</button>
+      <button onclick="adminStartLate()" class="pw-submit" style="width:100%;margin-bottom:8px;background:var(--red);">🔴 Start Late Counter</button>
       <button onclick="adminStopTravel()" style="width:100%;padding:10px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">↩️ Back to Pub Timer</button>
     </div>
 
@@ -515,7 +516,7 @@ async function fbSave() {
     // Keep playerVisits in sync with visited
     playerVisits = {};
     visited.forEach(s => { playerVisits[s] = [0]; });
-    const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes, appStartTime, appMinsPerPub, appStartPub });
+    const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
     // Update skip-check with same fields fbRead uses
     lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
@@ -1262,6 +1263,28 @@ function adminStopTravel() {
   travelStartTime = null;
   travelFromStop = null;
   showToast('↩️ Back to pub timer');
+  save();
+}
+
+function adminStartLate() {
+  if (visited.length === 0) { showToast('Check in at a pub first!'); return; }
+  // Force travel mode but set travelStartTime to the past so secsUntilArrival is already negative
+  travelMode = true;
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  // Find last checked stop and its scheduled leave time
+  let lastStop = 0;
+  for (let i = 0; i < 27; i++) {
+    if (visited.some(v => Number(v) === i + 1)) lastStop = i + 1;
+  }
+  travelFromStop = lastStop;
+  // Override checkinTimes so leave time is already in the past
+  const mpp = parseInt((document.getElementById('minsPerPub') || {value:'20'}).value) || 20;
+  const travel = TRAVEL_MINS[lastStop - 1] || 5;
+  // Set checkin time so that leave + travel = now (already overdue)
+  checkinTimes[lastStop] = nowMins - mpp - travel - 1;
+  save();
+  showToast('🔴 Late counter started!');
 }
 
 function saveCrawlSettings() {
@@ -1654,7 +1677,7 @@ function startCountdown(schedule, minsPerPub) {
     }
 
     // ── STATE 2: Travelling to next pub ──
-    if (secsUntilLeave <= 0 && secsUntilArrival > 0 && nextPub) {
+    if ((secsUntilLeave <= 0 || travelMode) && secsUntilArrival > 0 && nextPub) {
       banner.style.background = 'rgba(255,211,41,0.12)';
       banner.style.borderTop = '1px solid rgba(255,211,41,0.5)';
       document.getElementById('countdownHeaderLabel').textContent = 'HEAD TO NEXT PUB IN';
@@ -1669,14 +1692,16 @@ function startCountdown(schedule, minsPerPub) {
       return;
     }
 
-    // ── STATE 2b: Should have arrived at next pub ──
+    // ── STATE 2b: Overdue — should have arrived, counter going UP ──
     if (secsUntilArrival <= 0 && secsUntilLeave <= 0 && nextPub) {
-      banner.style.background = 'rgba(227,23,62,0.12)';
-      banner.style.borderTop = '1px solid rgba(227,23,62,0.5)';
-      document.getElementById('countdownHeaderLabel').textContent = 'YOU SHOULD BE AT';
-      timerEl.textContent = '📍';
+      const secsOverdue = Math.abs(secsUntilArrival);
+      const mm = Math.floor(secsOverdue / 60), ss = secsOverdue % 60;
+      banner.style.background = 'rgba(227,23,62,0.15)';
+      banner.style.borderTop = '1px solid rgba(227,23,62,0.6)';
+      document.getElementById('countdownHeaderLabel').textContent = 'LATE TO NEXT PUB';
+      timerEl.textContent = '+' + (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
       timerEl.style.color = 'var(--red)';
-      labelEl.textContent = '✅ ' + nextPub.name + ' — check in when ready!';
+      labelEl.textContent = '⚠️ Should be at ' + nextPub.name + ' by now!';
       return;
     }
 

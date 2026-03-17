@@ -383,11 +383,12 @@
 
 
     <div class="pace-section" style="margin-top:12px;">
-      <h3>🚇 Travel</h3>
-      <div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Manually start the travel countdown to the next pub.</div>
+      <h3>🚇 Pub Timer Controls</h3>
+      <div id="adminCurrentPubLabel" style="color:var(--muted);font-size:13px;margin-bottom:12px;">No pub checked in yet.</div>
       <button onclick="adminStartTravel()" id="travelBtn" class="pw-submit" style="width:100%;margin-bottom:8px;background:var(--blue);">🚇 Start Travel Countdown</button>
       <button onclick="adminStartLate()" class="pw-submit" style="width:100%;margin-bottom:8px;background:var(--red);">🔴 Start Late Counter</button>
-      <button onclick="adminStopTravel()" style="width:100%;padding:10px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">↩️ Back to Pub Timer</button>
+      <button onclick="adminResetPubTimer()" style="width:100%;margin-bottom:8px;padding:12px;background:none;border:1px solid var(--yellow);border-radius:10px;color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">↩️ Reset Pub Timer</button>
+      <button onclick="adminStopTravel()" style="width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;">⏹ Stop / Back to Pub Timer</button>
     </div>
 
     <div class="pace-section" style="margin-top:12px;">
@@ -1246,16 +1247,23 @@ function submitAdminTabPassword() {
 
 function adminStartTravel() {
   if (visited.length === 0) { showToast('Check in at a pub first!'); return; }
-  const now = new Date();
-  travelMode = true;
-  travelStartTime = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-  // Find last checked stop
+  const visitedNums = visited.map(Number);
   let lastStop = 0;
   for (let i = 0; i < 27; i++) {
-    if (visited.some(v => Number(v) === i + 1)) lastStop = i + 1;
+    if (visitedNums.includes(i + 1)) lastStop = i + 1;
   }
+  if (lastStop === 27) { showToast('Already at the last pub!'); return; }
+  travelMode = true;
   travelFromStop = lastStop;
-  showToast('🚇 Travel countdown started!');
+  // Set leave time to now so travel starts immediately
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  const mpp = parseInt((document.getElementById('minsPerPub') || {value:'20'}).value) || 20;
+  checkinTimes[lastStop] = nowMins - mpp; // backdates arrival so leave time = now
+  const pub = PUBS.find(p => p.stop === lastStop);
+  const nextPub = PUBS.find(p => p.stop === lastStop + 1);
+  save();
+  showToast('🚇 Travelling from #' + lastStop + ' to ' + nextPub.name);
 }
 
 function adminStopTravel() {
@@ -1264,6 +1272,21 @@ function adminStopTravel() {
   travelFromStop = null;
   showToast('↩️ Back to pub timer');
   save();
+}
+
+function adminResetPubTimer() {
+  const visitedNums = visited.map(Number);
+  let lastStop = 0;
+  for (let i = 0; i < 27; i++) {
+    if (visitedNums.includes(i + 1)) lastStop = i + 1;
+  }
+  if (lastStop === 0) { showToast('No pub checked in yet!'); return; }
+  // Reset checkin time for current pub to now
+  const now = new Date();
+  checkinTimes[lastStop] = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  travelMode = false;
+  save();
+  showToast('↩️ Pub timer reset for #' + lastStop);
 }
 
 function adminStartLate() {
@@ -1394,6 +1417,26 @@ function renderAdminPanel() {
   }
 
   updateNotifBtn();
+
+  // Update current pub label in travel section
+  const label = document.getElementById('adminCurrentPubLabel');
+  if (label) {
+    const visitedNums = visited.map(Number);
+    let lastStop = 0;
+    for (let i = 0; i < 27; i++) {
+      if (visitedNums.includes(i + 1)) lastStop = i + 1;
+    }
+    if (lastStop === 0) {
+      label.textContent = 'No pub checked in yet.';
+      label.style.color = 'var(--muted)';
+    } else {
+      const pub = PUBS.find(p => p.stop === lastStop);
+      const nextPub = PUBS.find(p => p.stop === lastStop + 1);
+      label.innerHTML = 'Currently at: <strong style="color:var(--yellow);">#' + lastStop + ' ' + pub.name + '</strong>' +
+        (nextPub ? '<br>Next: <span style="color:#4a9eff;">#' + nextPub.stop + ' ' + nextPub.name + '</span>' : '<br><span style="color:var(--green);">Last pub!</span>');
+      label.style.color = 'var(--text)';
+    }
+  }
 }
 
 // ── NOTIFICATIONS ──
@@ -1564,7 +1607,7 @@ function calcPace() {
 
   const paceResultEl = document.getElementById('paceResult');
   if (paceResultEl) paceResultEl.innerHTML =
-    'Total time: <strong>' + h + 'h ' + m + 'm</strong> &nbsp;·&nbsp; ' +
+    'Total time: <strong>' + h + 'h ' + Math.round(m) + 'm</strong> &nbsp;·&nbsp; ' +
     'Finish: <strong>~' + finishTime + '</strong><br>' +
     (mpp < 15 ? '⚠️ Very tight pace!' : mpp < 25 ? '✅ Solid pace!' : '😌 Nice and leisurely.');
 

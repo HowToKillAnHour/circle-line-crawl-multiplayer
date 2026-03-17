@@ -466,7 +466,8 @@ async function fbRead() {
     const data = await res.json();
     if (!data) return;
     // Only skip if the data hasn't meaningfully changed (checkins + visited)
-    const str = JSON.stringify({ v: data.visited, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub });
+    const photoCount = data.pubPhotos ? Object.values(data.pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0) : 0;
+    const str = JSON.stringify({ v: data.visited, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub, tm: data.travelMode, pc: photoCount });
     if (str === lastFbData) return;
     lastFbData = str;
     const remotePlayers = Array.isArray(data.players) ? data.players : (data.players ? Object.values(data.players) : []);
@@ -481,6 +482,7 @@ async function fbRead() {
     if (data.appStartTime) appStartTime = data.appStartTime;
     if (data.appMinsPerPub) appMinsPerPub = data.appMinsPerPub;
     if (data.appStartPub) appStartPub = data.appStartPub;
+    if (typeof data.travelMode === 'boolean') travelMode = data.travelMode;
     // Apply to inputs if visible
     const stEl = document.getElementById('startTime');
     const mpEl = document.getElementById('minsPerPub');
@@ -519,7 +521,8 @@ async function fbSave() {
     visited.forEach(s => { playerVisits[s] = [0]; });
     const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
     // Update skip-check with same fields fbRead uses
-    lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub });
+    const savePhotoCount = Object.values(pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
+    lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub, tm: travelMode, pc: savePhotoCount });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
@@ -824,6 +827,10 @@ function toggleCheckin(stop) {
     playerVisits[stopNum] = [0];
     const now = new Date();
     checkinTimes[stopNum] = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    // Clear travel mode — we've arrived at the next pub
+    travelMode = false;
+    travelStartTime = null;
+    travelFromStop = null;
     // Set start time to earliest checkin
     const earliest = Math.min(...Object.values(checkinTimes));
     const startEl = document.getElementById('startTime');
@@ -835,6 +842,7 @@ function toggleCheckin(stop) {
     delete playerVisits[stopNum];
     delete checkinTimes[stopNum];
     if (Object.keys(checkinTimes).length === 0) {
+      appStartTime = '10:00';
       const startEl = document.getElementById('startTime');
       if (startEl) startEl.value = '10:00';
     }
@@ -1228,23 +1236,6 @@ function submitAdminTabPassword() {
 
 
 
-function submitAdminTabPassword() {
-  const inp = document.getElementById('adminTabPwInput');
-  if (inp.value === ADMIN_PASSWORD) {
-    adminUnlocked = true;
-    document.getElementById('adminGate').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'block';
-    renderAdminPanel();
-    showToast('🔓 Admin unlocked!');
-  } else {
-    inp.classList.add('error');
-    inp.value = '';
-    setTimeout(() => inp.classList.remove('error'), 600);
-  }
-}
-
-
-
 function adminStartTravel() {
   if (visited.length === 0) { showToast('Check in at a pub first!'); return; }
   const visitedNums = visited.map(Number);
@@ -1562,6 +1553,7 @@ const TRAVEL_MINS = [
 ];
 
 let countdownInterval = null;
+let tenMinWarnedStop = null; // tracks which stop the 10-min warning has already fired for
 
 function buildSchedule(startMins, minsPerPub) {
   // Returns array of {stop, arrive, leave, travelToNext}
@@ -1753,8 +1745,11 @@ function startCountdown(schedule, minsPerPub) {
     banner.style.borderTop = '1px solid rgba(0,179,107,0.5)';
     document.getElementById('countdownHeaderLabel').textContent = 'LEAVE CURRENT PUB IN';
 
-    // 10 min warning notification
-    if (secsUntilLeave >= 599 && secsUntilLeave <= 601) fire10MinWarning(PUBS[currentIdx].name);
+    // 10 min warning notification — fire once per stop
+    if (secsUntilLeave >= 599 && secsUntilLeave <= 601 && tenMinWarnedStop !== cur.stop) {
+      tenMinWarnedStop = cur.stop;
+      fire10MinWarning(PUBS[currentIdx].name);
+    }
 
     if (secsUntilLeave <= 0) {
       const overdueMin = Math.round(-secsUntilLeave / 60);

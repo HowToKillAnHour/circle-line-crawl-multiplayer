@@ -538,82 +538,6 @@ function saveLocal() {
   try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
 }
 
-async function syncRead() {
-  if (!currentUser) return;
-  const statusEl = document.getElementById('syncStatus');
-  try {
-    const url = 'https://res.cloudinary.com/' + CL_CLOUD + '/raw/upload/' + CL_STATE_ID + '.json?t=' + Date.now();
-    const res = await fetch(url);
-    if (!res.ok) {
-      if (res.status === 404) {
-        // No state file yet — normal on first run, just wait for first write
-        if (statusEl) statusEl.textContent = '⏳ waiting...';
-      } else {
-        if (statusEl) statusEl.textContent = '⚠️ sync err ' + res.status;
-      }
-      return;
-    }
-    const data = await res.json();
-    const str = JSON.stringify(data);
-    if (statusEl) statusEl.textContent = '✅ synced';
-    if (str === lastStateStr) return; // nothing changed
-    lastStateStr = str;
-    players          = data.players          || players;
-    visited          = data.visited          || visited;
-    playerVisits     = data.playerVisits     || playerVisits;
-    pubPhotos        = data.pubPhotos        || pubPhotos;
-    adminCurrentStop = data.adminCurrentStop || adminCurrentStop;
-    localStorage.setItem('clp_players',  JSON.stringify(players));
-    localStorage.setItem('clp_visited',  JSON.stringify(visited));
-    localStorage.setItem('clp_pvisits',  JSON.stringify(playerVisits));
-    localStorage.setItem('clp_currentStop', JSON.stringify(adminCurrentStop));
-    try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
-    renderTracker();
-      if (document.getElementById('panel-photos').classList.contains('active')) renderPhotosTab();
-    if (adminUnlocked) renderAdminPanel();
-  } catch(e) {
-    console.warn('Sync read failed', e);
-    if (statusEl) statusEl.textContent = '❌ offline';
-  }
-}
-
-async function syncWrite() {
-  if (!currentUser) return;
-  const statusEl = document.getElementById('syncStatus');
-  try {
-    if (statusEl) statusEl.textContent = '⏳ saving...';
-    const state = JSON.stringify({
-      players, visited, playerVisits, pubPhotos,
-      adminCurrentStop: adminCurrentStop || null
-    });
-    lastStateStr = state;
-    const blob = new Blob([state], { type: 'application/json' });
-    const fd = new FormData();
-    fd.append('file', blob, 'gamestate.json');
-    fd.append('upload_preset', CL_PRESET);
-    fd.append('public_id', CL_STATE_ID);
-    const res = await fetch('https://api.cloudinary.com/v1_1/' + CL_CLOUD + '/auto/upload', {
-      method: 'POST',
-      body: fd
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      console.warn('Sync write error:', data);
-      if (statusEl) statusEl.textContent = '❌ ' + (data.error?.message || 'write err');
-    } else {
-      if (statusEl) statusEl.textContent = '✅ synced';
-    }
-  } catch(e) {
-    console.warn('Sync write failed', e);
-    if (statusEl) statusEl.textContent = '❌ write failed';
-  }
-}
-
-function startSync() {
-  if (syncInterval) return;
-  syncRead();
-  syncInterval = setInterval(syncRead, 10000);
-}
 
 const ADMIN_PASSWORD = 'pub';
 
@@ -758,21 +682,11 @@ function playerStopCount(pi) {
   return Object.values(playerVisits).filter(arr => arr.includes(pi)).length;
 }
 
-// ── WELCOME SCREEN ──
-function renderWelcome() {
-  // No-op — welcome is now just a static start screen
-}
-
 function startApp() {
   document.getElementById('welcomeScreen').style.display = 'none';
   renderTracker();
   fixStickyTop();
   askForNotifications();
-}
-
-// Highlight saved map pref on splash load
-function initMapPref() {
-  setMapPref(mapPref);
 }
 
 // Highlight saved map preference on splash screen load
@@ -782,9 +696,6 @@ function initMapPref() {
   // Delay so DOM is ready
   setTimeout(() => setMapApp(saved), 50);
 })();
-
-function welcomeAddPlayer() {}
-function selectUser(name) { startApp(); }
 
 // ── TRACKER ──
 function getSchedule() {
@@ -866,7 +777,6 @@ function renderTracker() {
     const globalDone = visited.includes(pub.stop);
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
-    const isCurrent = false;
     // Find the next uncompleted pub after the last completed one
     // Find the next uncompleted pub in display order
     const allDoneStops = new Set(visited.map(Number));
@@ -930,10 +840,9 @@ function updateProgress() {
     ]);
 
     if (checkedNums.size > 0) {
-      // Find the highest checked stop number
-      const maxChecked = Math.max(...checkedNums);
-      // Next pub is the first unchecked pub after the highest checked one
-      const nextPub = PUBS.find(p => p.stop > maxChecked && !checkedNums.has(p.stop));
+      // Find next pub using display order (respects start pub + wrap-around)
+      const orderedPubs = [...PUBS.slice(appStartPub - 1), ...PUBS.slice(0, appStartPub - 1)];
+      const nextPub = orderedPubs.find(p => !checkedNums.has(p.stop));
       if (nextPub) {
         banner.style.display = 'block';
         const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nextPub.q);
@@ -1080,30 +989,39 @@ function bgClose(e) { if (e.target === document.getElementById('modalOverlay')) 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); modalStop = null; }
 
 // ── PHOTOS (Cloudinary) ──
+
+// Shared upload helper — used by both row camera and modal upload
+async function uploadPhotoFile(file, stop) {
+  const pub = PUBS.find(p => p.stop === stop);
+  const folder = 'pub-crawl/stop-' + String(stop).padStart(2,'0') + '-' + pub.station.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  formData.append('folder', folder);
+  formData.append('context', 'stop=' + stop + '|pub=' + pub.name + '|uploader=' + (currentUser || 'unknown'));
+  const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
+    method: 'POST', body: formData
+  });
+  if (!res.ok) throw new Error('Upload failed: ' + res.status);
+  const data = await res.json();
+  return data.secure_url;
+}
+
 async function handlePhotoUploadFromRow(e, stop) {
   const file = e.target.files[0];
   if (!file) return;
   e.target.value = '';
-  const pub = PUBS.find(p => p.stop === stop);
-  const folder = 'pub-crawl/stop-' + String(stop).padStart(2,'0') + '-' + pub.station.toLowerCase().replace(/[^a-z0-9]+/g,'-');
   showToast('📤 Uploading...');
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    formData.append('folder', folder);
-    formData.append('context', 'stop=' + stop + '|pub=' + pub.name + '|uploader=' + (currentUser || 'unknown'));
-    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
-      method: 'POST', body: formData
-    });
-    if (!res.ok) throw new Error('Upload failed');
-    const data = await res.json();
+    const url = await uploadPhotoFile(file, stop);
     if (!pubPhotos[stop]) pubPhotos[stop] = [];
-    pubPhotos[stop].push(data.secure_url);
-    save(); // pushes to Firebase so all phones see it
+    pubPhotos[stop].push(url);
+    save();
     renderTracker();
+    if (document.getElementById('panel-photos').classList.contains('active')) renderPhotosTab();
     showToast('📸 Photo saved!');
   } catch(err) {
+    console.error(err);
     showToast('Upload failed — check connection');
   }
 }
@@ -1112,29 +1030,11 @@ async function handlePhotoUpload(e) {
   const file = e.target.files[0];
   if (!file || modalStop === null) return;
   e.target.value = '';
-
-  const pub = PUBS.find(p => p.stop === modalStop);
-  const folder = 'pub-crawl/stop-' + String(modalStop).padStart(2,'0') + '-' + pub.station.toLowerCase().replace(/[^a-z0-9]+/g,'-');
   const uploader = document.getElementById('photoUploadArea');
   uploader.style.opacity = '0.5';
   showToast('📤 Uploading...');
-
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    formData.append('folder', folder);
-    formData.append('context', 'stop=' + modalStop + '|pub=' + pub.name + '|uploader=' + (currentUser || 'unknown'));
-
-    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) throw new Error('Upload failed: ' + res.status);
-    const data = await res.json();
-    const url = data.secure_url;
-
+    const url = await uploadPhotoFile(file, modalStop);
     if (!pubPhotos[modalStop]) pubPhotos[modalStop] = [];
     pubPhotos[modalStop].push(url);
     save(); renderModalPhotos(modalStop); renderTracker();
@@ -1320,92 +1220,8 @@ function lockAdmin() {
   showToast('🔒 Admin locked');
 }
 
-// ── ADMIN PLAYER MANAGEMENT ──
-function adminAddPlayer() {
-  const inp = document.getElementById('adminAddNameInput');
-  const name = inp.value.trim();
-  if (!name) return;
-  if (players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
-    showToast('Name already in the crawl!'); return;
-  }
-  players.push({ name, score: 0, status: 'active' });
-  inp.value = '';
-  save(); renderAdminPanel();
-  showToast('✅ ' + name + ' added!');
-}
-
-function adminRemovePlayer(i) {
-  const p = players[i];
-  if (!confirm('Remove ' + p.name + ' from the crawl?')) return;
-  // Clean up their visits
-  Object.keys(playerVisits).forEach(stop => {
-    playerVisits[stop] = playerVisits[stop].filter(pi => pi !== i).map(pi => pi > i ? pi - 1 : pi);
-  });
-  players.splice(i, 1);
-  if (currentUser === p.name) currentUser = null;
-  save(); renderTracker(); renderAdminPanel();
-  showToast('Removed ' + p.name);
-}
-
 function renderAdminPanel() {
   if (!adminUnlocked) return;
-
-  // Pub selector
-  const pubList = document.getElementById('adminPubList');
-  if (pubList) {
-    pubList.innerHTML = '';
-    PUBS.forEach(pub => {
-      const isCurrent = false; // current-stop highlight removed
-      const btn = document.createElement('button');
-      btn.style.cssText = 'background:' + (isCurrent ? 'rgba(255,211,41,0.15)' : 'var(--card)') + ';border:1px solid ' + (isCurrent ? 'var(--yellow)' : 'var(--border)') + ';border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--text);font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:700;width:100%;text-align:left;gap:8px;';
-      btn.innerHTML = '<span>#' + pub.stop + ' ' + pub.name + ' <span style="color:var(--muted);font-weight:400;font-size:12px;">' + pub.station + '</span></span>' + (isCurrent ? '<span style="color:var(--yellow);font-size:12px;white-space:nowrap;">▶ NOW</span>' : '');
-      btn.onclick = () => { adminCurrentStop = pub.stop; save(); renderAdminPanel(); renderTracker(); showToast('📍 Now at #' + pub.stop + ' ' + pub.name); };
-      pubList.appendChild(btn);
-    });
-  }
-
-  // Score editor
-  const scoreList = document.getElementById('adminScoreList');
-  if (scoreList) {
-    scoreList.innerHTML = '';
-    players.forEach((p, i) => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);';
-      row.innerHTML = '<span style="font-weight:700;font-size:15px;">' + p.name + '</span>' +
-        '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<button onclick="changeScore(' + i + ',-20)" style="background:var(--border);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>' +
-          '<span style="font-family:DM Mono,monospace;font-size:14px;min-width:52px;text-align:center;">' + p.score + ' pts</span>' +
-          '<button onclick="changeScore(' + i + ',20)" style="background:var(--border);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>' +
-        '</div>';
-      scoreList.appendChild(row);
-    });
-    if (!players.length) scoreList.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0;">No players yet</div>';
-  }
-
-  // Player list
-  const playerList = document.getElementById('adminPlayerList');
-  if (playerList) {
-    playerList.innerHTML = '';
-    if (!players.length) {
-      playerList.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0;">No players yet — add one below</div>';
-    } else {
-      players.forEach((p, i) => {
-        const row = document.createElement('div');
-        row.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;';
-        const isMe = p.name === currentUser;
-        row.innerHTML =
-          '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<span style="font-size:16px;font-weight:700;">' + p.name + '</span>' +
-            (isMe ? '<span style="font-size:10px;background:var(--yellow);color:var(--dark);padding:2px 6px;border-radius:10px;font-weight:900;">YOU</span>' : '') +
-          '</div>' +
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<span style="font-family:DM Mono,monospace;font-size:12px;color:var(--muted);">' + playerStopCount(i) + '/27 pubs · ' + p.score + 'pts</span>' +
-            (isMe ? '' : '<button onclick="adminRemovePlayer(' + i + ')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:13px;padding:4px 8px;cursor:pointer;">✕</button>') +
-          '</div>';
-        playerList.appendChild(row);
-      });
-    }
-  }
 
   updateNotifBtn();
 
@@ -1489,15 +1305,6 @@ function fireLeaveNotification(pubName, nextPubName) {
   });
 }
 
-// ── LEGACY (modal pw still works) ──
-function promptAdminUnlock() {
-  if (adminUnlocked) { lockAdmin(); return; }
-  document.getElementById('pwInput').value = '';
-  document.getElementById('pwInput').classList.remove('error');
-  document.getElementById('pwModal').classList.add('open');
-  setTimeout(() => document.getElementById('pwInput').focus(), 300);
-}
-
 function submitPassword() {
   const val = document.getElementById('pwInput').value;
   if (val === ADMIN_PASSWORD) {
@@ -1515,12 +1322,8 @@ function submitPassword() {
 
 function closePwModal() { document.getElementById('pwModal').classList.remove('open'); }
 
-function updateAdminBar() { /* legacy no-op */ }
-
-// ── LEADERBOARD ──
-// Leaderboard removed
-
 // ── PACE ──
+
 // Travel times in minutes between consecutive pubs (walk + tube + walk to next pub)
 // stop N -> stop N+1
 const TRAVEL_MINS = [

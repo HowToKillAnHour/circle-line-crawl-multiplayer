@@ -191,6 +191,8 @@
   .pub-name-row{display:flex;align-items:baseline;gap:8px;}
   .pub-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--yellow);opacity:0.8;font-weight:400;white-space:nowrap;}
   .pub-row.done .pub-time{opacity:0.4;}
+  .pub-row.future{opacity:0.7;}
+  .snap-nudge{display:inline-flex;align-items:center;gap:4px;margin-top:5px;background:rgba(255,211,41,0.1);border:1px solid rgba(255,211,41,0.3);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--yellow);letter-spacing:0.5px;cursor:pointer;user-select:none;}
 </style>
 <!-- No external SDK needed - using Firebase REST API directly -->
 </head>
@@ -430,6 +432,17 @@
     <input class="pw-input" type="password" id="pwInput" placeholder="••••" maxlength="20" onkeydown="if(event.key==='Enter')submitPassword()">
     <button class="pw-submit" onclick="submitPassword()">Unlock</button>
     <button class="pw-cancel" onclick="closePwModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ PHOTO CONFIRM MODAL ══ -->
+<div class="pw-modal" id="photoConfirmModal">
+  <div class="pw-box">
+    <div id="photoConfirmTitle" class="pw-title"></div>
+    <div class="pw-sub">Did you take a photo at this pub?</div>
+    <button class="pw-submit" onclick="photoConfirmYes()" style="margin-bottom:8px;">Yes, check in ✅</button>
+    <button class="pw-submit" onclick="photoConfirmNo()" style="background:var(--border);color:var(--text);margin-bottom:8px;">No, take a photo first 📷</button>
+    <button class="pw-cancel" onclick="closePhotoConfirm()">Cancel</button>
   </div>
 </div>
 
@@ -752,13 +765,14 @@ function renderTracker() {
     const allDoneStops = new Set(visited.map(Number));
     const lastDoneIdx = orderedPubs.reduce((best, p, i) => allDoneStops.has(p.stop) ? i : best, -1);
     const isNextTarget = !globalDone && idx === lastDoneIdx + 1;
-    row.className = 'pub-row' + (globalDone ? ' done' : '') + (isNextTarget ? ' next-target' : '');
+    row.className = 'pub-row' + (globalDone ? ' done' : isNextTarget ? ' next-target' : ' future');
     row.id = 'pub-' + pub.stop;
     const avatars = ''; // removed player avatars
     const thumb = photos.length ? '<img class="pub-thumb" src="' + photos[photos.length-1] + '" alt="pint">' : '';
     const sched = schedule[pub.stop - 1];
     const crawlStarted = Object.keys(checkinTimes).length > 0;
     const timeLabel = (sched.skipped || !crawlStarted) ? '' : '<span class="pub-time">' + fmtTime(sched.arrive) + '</span>';
+    const snapNudge = (isNextTarget && !adminUnlocked) ? '<div class="snap-nudge">📷 Snap your pint!</div>' : '';
     row.innerHTML =
       '<div class="stop-num">' + displayStop + '</div>' +
       '<div class="circle-dot"></div>' +
@@ -766,6 +780,7 @@ function renderTracker() {
         '<div class="pub-name-row"><span class="pub-name">' + pub.name + '</span>' + timeLabel + '</div>' +
         '<div class="pub-station">' + pub.station + (sched.skipped || !crawlStarted ? '' : ' · leave ' + fmtTime(sched.leave)) + '</div>' +
         (avatars ? '<div class="checkin-avatars">' + avatars + '</div>' : '') +
+        snapNudge +
       '</div>' +
       thumb +
       '<div class="check-icon">🍺</div>' +
@@ -777,9 +792,16 @@ function renderTracker() {
     const camInput = row.querySelector('.cam-input');
     camBtn.addEventListener('click', e => { e.stopPropagation(); camInput.click(); });
     camInput.addEventListener('change', e => { e.stopPropagation(); handlePhotoUploadFromRow(e, pub.stop); });
+    const nudgeEl = row.querySelector('.snap-nudge');
+    if (nudgeEl) nudgeEl.addEventListener('click', e => { e.stopPropagation(); camInput.click(); });
     row.addEventListener('click', () => {
       if (!adminUnlocked) { showToast('🔒 Admin checks in pubs'); return; }
-      toggleCheckin(pub.stop);
+      const alreadyDone = visited.map(Number).includes(pub.stop);
+      if (!alreadyDone) {
+        showPhotoConfirm(pub.stop);
+      } else {
+        toggleCheckin(pub.stop); // undo — no photo prompt needed
+      }
     });
     grid.appendChild(row);
   });
@@ -906,6 +928,10 @@ async function handlePhotoUploadFromRow(e, stop) {
     renderTracker();
     if (document.getElementById('panel-photos').classList.contains('active')) renderPhotosTab();
     showToast('📸 Photo saved!');
+    if (pendingPhotoCheckin === stop) {
+      pendingPhotoCheckin = null;
+      if (!visited.map(Number).includes(stop)) toggleCheckin(stop);
+    }
   } catch(err) {
     console.error(err);
     showToast('Upload failed — check connection');
@@ -1218,6 +1244,34 @@ function submitPassword() {
 
 function closePwModal() { document.getElementById('pwModal').classList.remove('open'); }
 
+// ── PHOTO CONFIRM (admin check-in) ──
+function showPhotoConfirm(stop) {
+  const pub = PUBS.find(p => p.stop === stop);
+  photoConfirmStop = stop;
+  document.getElementById('photoConfirmTitle').textContent = '#' + stop + ' ' + pub.name;
+  document.getElementById('photoConfirmModal').classList.add('open');
+}
+
+function closePhotoConfirm() {
+  document.getElementById('photoConfirmModal').classList.remove('open');
+  photoConfirmStop = null;
+}
+
+function photoConfirmYes() {
+  const stop = photoConfirmStop;
+  closePhotoConfirm();
+  if (stop !== null) toggleCheckin(stop);
+}
+
+function photoConfirmNo() {
+  const stop = photoConfirmStop;
+  closePhotoConfirm();
+  if (stop === null) return;
+  pendingPhotoCheckin = stop;
+  const rowInput = document.querySelector('#pub-' + stop + ' .cam-input');
+  if (rowInput) rowInput.click();
+}
+
 // ── PACE ──
 
 // Travel times in minutes between consecutive pubs (walk + tube + walk to next pub)
@@ -1250,6 +1304,9 @@ const TRAVEL_MINS = [
   5,  // 25 Gloucester Road -> 26 South Kensington
   10, // 26 South Kensington -> 27 Sloane Square
 ];
+
+let photoConfirmStop = null;
+let pendingPhotoCheckin = null;
 
 let countdownInterval = null;
 let tenMinWarnedStop = null;  // tracks which stop the 10-min warning has already fired for

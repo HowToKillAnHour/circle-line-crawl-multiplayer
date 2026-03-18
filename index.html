@@ -89,13 +89,10 @@
   .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
   .modal-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;text-align:center;}
   .modal-pub-name{font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--yellow);text-align:center;margin-bottom:14px;}
-  .modal-pts-badge{background:rgba(255,211,41,0.15);border:1px solid rgba(255,211,41,0.3);border-radius:6px;padding:4px 10px;font-size:13px;font-family:'DM Mono',monospace;color:var(--yellow);margin-bottom:14px;text-align:center;}
   .player-select-list{display:flex;flex-direction:column;gap:8px;}
   .player-select-btn{background:var(--card);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;}
   .player-select-btn:hover{border-color:var(--yellow);background:#1e1b09;}
   .player-select-btn.already-done{border-color:var(--green);}
-  .btn-pts{font-size:13px;font-family:'DM Mono',monospace;color:var(--yellow);}
-  .btn-pts-done{font-size:13px;font-family:'DM Mono',monospace;color:var(--green);}
   .modal-divider{border:none;border-top:1px solid var(--border);margin:18px 0 14px;}
   .modal-section-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;text-align:center;}
 
@@ -266,7 +263,7 @@
     <button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
       START THE CRAWL 🍺
     </button>
-    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v1.1</strong></div>
+    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v1.2</strong></div>
 
   </div>
 </div>
@@ -402,7 +399,7 @@
   </div>
 </div>
 
-<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><strong style="font-size:11px;opacity:0.6;letter-spacing:2px;">v1.1</strong></footer>
+<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><strong style="font-size:11px;opacity:0.6;letter-spacing:2px;">v1.2</strong></footer>
 <div class="toast" id="toast"></div>
 
 <!-- ══ CHECK-IN MODAL ══ -->
@@ -411,7 +408,6 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Stop check-in</div>
     <div class="modal-pub-name" id="modalPubName"></div>
-    <div class="modal-pts-badge" id="modalPtsBadge"></div>
     <div style="text-align:right;margin-bottom:10px;"><button id="modalAdminBtn" onclick="toggleModalAdmin()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:Barlow Condensed,sans-serif;font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;letter-spacing:1px;">🔒 ADMIN</button></div>
     <div class="player-select-list" id="playerSelectList"></div>
     <hr class="modal-divider">
@@ -430,7 +426,7 @@
 <div class="pw-modal" id="pwModal">
   <div class="pw-box">
     <div class="pw-title">🔐 Admin Access</div>
-    <div class="pw-sub">Enter the password to edit scores</div>
+    <div class="pw-sub">Enter the password to unlock admin controls</div>
     <input class="pw-input" type="password" id="pwInput" placeholder="••••" maxlength="20" onkeydown="if(event.key==='Enter')submitPassword()">
     <button class="pw-submit" onclick="submitPassword()">Unlock</button>
     <button class="pw-cancel" onclick="closePwModal()">Cancel</button>
@@ -466,7 +462,8 @@ async function fbRead() {
     const data = await res.json();
     if (!data) return;
     // Only skip if the data hasn't meaningfully changed (checkins + visited)
-    const str = JSON.stringify({ v: data.visited, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub });
+    const photoCount = data.pubPhotos ? Object.values(data.pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0) : 0;
+    const str = JSON.stringify({ v: data.visited, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub, tm: data.travelMode, pc: photoCount });
     if (str === lastFbData) return;
     lastFbData = str;
     const remotePlayers = Array.isArray(data.players) ? data.players : (data.players ? Object.values(data.players) : []);
@@ -481,6 +478,7 @@ async function fbRead() {
     if (data.appStartTime) appStartTime = data.appStartTime;
     if (data.appMinsPerPub) appMinsPerPub = data.appMinsPerPub;
     if (data.appStartPub) appStartPub = data.appStartPub;
+    if (typeof data.travelMode === 'boolean') travelMode = data.travelMode;
     // Apply to inputs if visible
     const stEl = document.getElementById('startTime');
     const mpEl = document.getElementById('minsPerPub');
@@ -519,7 +517,8 @@ async function fbSave() {
     visited.forEach(s => { playerVisits[s] = [0]; });
     const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
     // Update skip-check with same fields fbRead uses
-    lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub });
+    const savePhotoCount = Object.values(pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
+    lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub, tm: travelMode, pc: savePhotoCount });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
@@ -535,82 +534,6 @@ function saveLocal() {
   try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
 }
 
-async function syncRead() {
-  if (!currentUser) return;
-  const statusEl = document.getElementById('syncStatus');
-  try {
-    const url = 'https://res.cloudinary.com/' + CL_CLOUD + '/raw/upload/' + CL_STATE_ID + '.json?t=' + Date.now();
-    const res = await fetch(url);
-    if (!res.ok) {
-      if (res.status === 404) {
-        // No state file yet — normal on first run, just wait for first write
-        if (statusEl) statusEl.textContent = '⏳ waiting...';
-      } else {
-        if (statusEl) statusEl.textContent = '⚠️ sync err ' + res.status;
-      }
-      return;
-    }
-    const data = await res.json();
-    const str = JSON.stringify(data);
-    if (statusEl) statusEl.textContent = '✅ synced';
-    if (str === lastStateStr) return; // nothing changed
-    lastStateStr = str;
-    players          = data.players          || players;
-    visited          = data.visited          || visited;
-    playerVisits     = data.playerVisits     || playerVisits;
-    pubPhotos        = data.pubPhotos        || pubPhotos;
-    adminCurrentStop = data.adminCurrentStop || adminCurrentStop;
-    localStorage.setItem('clp_players',  JSON.stringify(players));
-    localStorage.setItem('clp_visited',  JSON.stringify(visited));
-    localStorage.setItem('clp_pvisits',  JSON.stringify(playerVisits));
-    localStorage.setItem('clp_currentStop', JSON.stringify(adminCurrentStop));
-    try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
-    renderTracker();
-      if (document.getElementById('panel-photos').classList.contains('active')) renderPhotosTab();
-    if (adminUnlocked) renderAdminPanel();
-  } catch(e) {
-    console.warn('Sync read failed', e);
-    if (statusEl) statusEl.textContent = '❌ offline';
-  }
-}
-
-async function syncWrite() {
-  if (!currentUser) return;
-  const statusEl = document.getElementById('syncStatus');
-  try {
-    if (statusEl) statusEl.textContent = '⏳ saving...';
-    const state = JSON.stringify({
-      players, visited, playerVisits, pubPhotos,
-      adminCurrentStop: adminCurrentStop || null
-    });
-    lastStateStr = state;
-    const blob = new Blob([state], { type: 'application/json' });
-    const fd = new FormData();
-    fd.append('file', blob, 'gamestate.json');
-    fd.append('upload_preset', CL_PRESET);
-    fd.append('public_id', CL_STATE_ID);
-    const res = await fetch('https://api.cloudinary.com/v1_1/' + CL_CLOUD + '/auto/upload', {
-      method: 'POST',
-      body: fd
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      console.warn('Sync write error:', data);
-      if (statusEl) statusEl.textContent = '❌ ' + (data.error?.message || 'write err');
-    } else {
-      if (statusEl) statusEl.textContent = '✅ synced';
-    }
-  } catch(e) {
-    console.warn('Sync write failed', e);
-    if (statusEl) statusEl.textContent = '❌ write failed';
-  }
-}
-
-function startSync() {
-  if (syncInterval) return;
-  syncRead();
-  syncInterval = setInterval(syncRead, 10000);
-}
 
 const ADMIN_PASSWORD = 'pub';
 
@@ -621,7 +544,6 @@ function resetTestPhotos() {
   renderTracker();
   showToast('📸 Photos cleared');
 }
-const PUB_POINTS = 20;
 const CLOUDINARY_CLOUD = 'dwcrs0vkk';
 const CLOUDINARY_PRESET = 'pub-crawl';
 const CLOUDINARY_BASE = 'https://res.cloudinary.com/' + CLOUDINARY_CLOUD + '/image/upload/';
@@ -755,21 +677,11 @@ function playerStopCount(pi) {
   return Object.values(playerVisits).filter(arr => arr.includes(pi)).length;
 }
 
-// ── WELCOME SCREEN ──
-function renderWelcome() {
-  // No-op — welcome is now just a static start screen
-}
-
 function startApp() {
   document.getElementById('welcomeScreen').style.display = 'none';
   renderTracker();
   fixStickyTop();
   askForNotifications();
-}
-
-// Highlight saved map pref on splash load
-function initMapPref() {
-  setMapPref(mapPref);
 }
 
 // Highlight saved map preference on splash screen load
@@ -779,9 +691,6 @@ function initMapPref() {
   // Delay so DOM is ready
   setTimeout(() => setMapApp(saved), 50);
 })();
-
-function welcomeAddPlayer() {}
-function selectUser(name) { startApp(); }
 
 // ── TRACKER ──
 function getSchedule() {
@@ -824,6 +733,10 @@ function toggleCheckin(stop) {
     playerVisits[stopNum] = [0];
     const now = new Date();
     checkinTimes[stopNum] = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    // Clear travel mode — we've arrived at the next pub
+    travelMode = false;
+    travelStartTime = null;
+    travelFromStop = null;
     // Set start time to earliest checkin
     const earliest = Math.min(...Object.values(checkinTimes));
     const startEl = document.getElementById('startTime');
@@ -835,6 +748,7 @@ function toggleCheckin(stop) {
     delete playerVisits[stopNum];
     delete checkinTimes[stopNum];
     if (Object.keys(checkinTimes).length === 0) {
+      appStartTime = '10:00';
       const startEl = document.getElementById('startTime');
       if (startEl) startEl.value = '10:00';
     }
@@ -858,7 +772,6 @@ function renderTracker() {
     const globalDone = visited.includes(pub.stop);
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
-    const isCurrent = false;
     // Find the next uncompleted pub after the last completed one
     // Find the next uncompleted pub in display order
     const allDoneStops = new Set(visited.map(Number));
@@ -922,10 +835,9 @@ function updateProgress() {
     ]);
 
     if (checkedNums.size > 0) {
-      // Find the highest checked stop number
-      const maxChecked = Math.max(...checkedNums);
-      // Next pub is the first unchecked pub after the highest checked one
-      const nextPub = PUBS.find(p => p.stop > maxChecked && !checkedNums.has(p.stop));
+      // Find next pub using display order (respects start pub + wrap-around)
+      const orderedPubs = [...PUBS.slice(appStartPub - 1), ...PUBS.slice(0, appStartPub - 1)];
+      const nextPub = orderedPubs.find(p => !checkedNums.has(p.stop));
       if (nextPub) {
         banner.style.display = 'block';
         const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nextPub.q);
@@ -949,7 +861,6 @@ function openModal(stop) {
   modalStop = stop;
   const pub = PUBS.find(p => p.stop === stop);
   document.getElementById('modalPubName').textContent = '#' + stop + ' ' + pub.name;
-  document.getElementById('modalPtsBadge').textContent = '+' + PUB_POINTS + ' pts per person';
 
   const list = document.getElementById('playerSelectList');
   list.innerHTML = '';
@@ -979,17 +890,15 @@ function openModal(stop) {
       myBtn.style.borderColor = myDone ? '' : 'var(--yellow)';
       myBtn.innerHTML =
         '<span>' + players[ci].name + ' <span style="font-size:11px;color:var(--muted);font-weight:400">(you)</span></span>' +
-        '<span class="' + (myDone ? 'btn-pts-done' : 'btn-pts') + '">' + (myDone ? '\u2713 Checked in' : '+ Check me in') + '</span>';
+        '<span style="font-size:13px;font-family:\'DM Mono\',monospace;color:' + (myDone ? 'var(--green)' : 'var(--yellow)') + ';">' + (myDone ? '\u2713 Done' : 'Check in') + '</span>';
       myBtn.onclick = () => {
         if (!playerVisits[stop]) playerVisits[stop] = [];
         const vi = playerVisits[stop].indexOf(ci);
         if (vi === -1) {
           playerVisits[stop].push(ci);
-          players[ci].score += PUB_POINTS;
-          showToast('\ud83c\udf7a Checked in! +' + PUB_POINTS + ' pts');
+          showToast('\ud83c\udf7a Checked in!');
         } else {
           playerVisits[stop].splice(vi, 1);
-          players[ci].score = Math.max(0, players[ci].score - PUB_POINTS);
           showToast('Removed your check-in');
         }
         const any = (playerVisits[stop] || []).length > 0;
@@ -1014,17 +923,15 @@ function openModal(stop) {
           const btn = document.createElement('button');
           btn.className = 'player-select-btn' + (done ? ' already-done' : '');
           btn.innerHTML = '<span>' + p.name + '</span>' +
-            '<span class="' + (done ? 'btn-pts-done' : 'btn-pts') + '">' + (done ? '\u2713 Checked in' : '+ Check in') + '</span>';
+            '<span style="font-size:13px;font-family:\'DM Mono\',monospace;color:' + (done ? 'var(--green)' : 'var(--yellow)') + ';">' + (done ? '\u2713 Done' : 'Check in') + '</span>';
           btn.onclick = () => {
             if (!playerVisits[stop]) playerVisits[stop] = [];
             const vi = playerVisits[stop].indexOf(pi);
             if (vi === -1) {
               playerVisits[stop].push(pi);
-              players[pi].score += PUB_POINTS;
               showToast('\ud83c\udf7a ' + p.name + ' checked in!');
             } else {
               playerVisits[stop].splice(vi, 1);
-              players[pi].score = Math.max(0, players[pi].score - PUB_POINTS);
               showToast('Removed ' + p.name);
             }
             const any = (playerVisits[stop] || []).length > 0;
@@ -1038,7 +945,7 @@ function openModal(stop) {
           const row = document.createElement('div');
           row.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;opacity:0.65;';
           row.innerHTML = '<span style="font-size:16px;font-weight:700;">' + p.name + '</span>' +
-            '<span class="' + (done ? 'btn-pts-done' : '') + '" style="font-size:13px;">' + (done ? '\u2713 Here' : '\u2014') + '</span>';
+            '<span style="font-size:13px;' + (done ? 'color:var(--green);' : '') + '">' + (done ? '\u2713 Here' : '\u2014') + '</span>';
           list.appendChild(row);
         }
       });
@@ -1072,30 +979,39 @@ function bgClose(e) { if (e.target === document.getElementById('modalOverlay')) 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); modalStop = null; }
 
 // ── PHOTOS (Cloudinary) ──
+
+// Shared upload helper — used by both row camera and modal upload
+async function uploadPhotoFile(file, stop) {
+  const pub = PUBS.find(p => p.stop === stop);
+  const folder = 'pub-crawl/stop-' + String(stop).padStart(2,'0') + '-' + pub.station.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  formData.append('folder', folder);
+  formData.append('context', 'stop=' + stop + '|pub=' + pub.name + '|uploader=' + (currentUser || 'unknown'));
+  const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
+    method: 'POST', body: formData
+  });
+  if (!res.ok) throw new Error('Upload failed: ' + res.status);
+  const data = await res.json();
+  return data.secure_url;
+}
+
 async function handlePhotoUploadFromRow(e, stop) {
   const file = e.target.files[0];
   if (!file) return;
   e.target.value = '';
-  const pub = PUBS.find(p => p.stop === stop);
-  const folder = 'pub-crawl/stop-' + String(stop).padStart(2,'0') + '-' + pub.station.toLowerCase().replace(/[^a-z0-9]+/g,'-');
   showToast('📤 Uploading...');
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    formData.append('folder', folder);
-    formData.append('context', 'stop=' + stop + '|pub=' + pub.name + '|uploader=' + (currentUser || 'unknown'));
-    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
-      method: 'POST', body: formData
-    });
-    if (!res.ok) throw new Error('Upload failed');
-    const data = await res.json();
+    const url = await uploadPhotoFile(file, stop);
     if (!pubPhotos[stop]) pubPhotos[stop] = [];
-    pubPhotos[stop].push(data.secure_url);
-    save(); // pushes to Firebase so all phones see it
+    pubPhotos[stop].push(url);
+    save();
     renderTracker();
+    if (document.getElementById('panel-photos').classList.contains('active')) renderPhotosTab();
     showToast('📸 Photo saved!');
   } catch(err) {
+    console.error(err);
     showToast('Upload failed — check connection');
   }
 }
@@ -1104,29 +1020,11 @@ async function handlePhotoUpload(e) {
   const file = e.target.files[0];
   if (!file || modalStop === null) return;
   e.target.value = '';
-
-  const pub = PUBS.find(p => p.stop === modalStop);
-  const folder = 'pub-crawl/stop-' + String(modalStop).padStart(2,'0') + '-' + pub.station.toLowerCase().replace(/[^a-z0-9]+/g,'-');
   const uploader = document.getElementById('photoUploadArea');
   uploader.style.opacity = '0.5';
   showToast('📤 Uploading...');
-
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    formData.append('folder', folder);
-    formData.append('context', 'stop=' + modalStop + '|pub=' + pub.name + '|uploader=' + (currentUser || 'unknown'));
-
-    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) throw new Error('Upload failed: ' + res.status);
-    const data = await res.json();
-    const url = data.secure_url;
-
+    const url = await uploadPhotoFile(file, modalStop);
     if (!pubPhotos[modalStop]) pubPhotos[modalStop] = [];
     pubPhotos[modalStop].push(url);
     save(); renderModalPhotos(modalStop); renderTracker();
@@ -1209,23 +1107,6 @@ function updateModalAdminBtn() {
 }
 
 // ── ADMIN TAB ──
-
-
-function submitAdminTabPassword() {
-  const inp = document.getElementById('adminTabPwInput');
-  if (inp.value === ADMIN_PASSWORD) {
-    adminUnlocked = true;
-    document.getElementById('adminGate').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'block';
-    renderAdminPanel();
-    showToast('🔓 Admin unlocked!');
-  } else {
-    inp.classList.add('error');
-    inp.value = '';
-    setTimeout(() => inp.classList.remove('error'), 600);
-  }
-}
-
 
 
 function submitAdminTabPassword() {
@@ -1329,92 +1210,8 @@ function lockAdmin() {
   showToast('🔒 Admin locked');
 }
 
-// ── ADMIN PLAYER MANAGEMENT ──
-function adminAddPlayer() {
-  const inp = document.getElementById('adminAddNameInput');
-  const name = inp.value.trim();
-  if (!name) return;
-  if (players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
-    showToast('Name already in the crawl!'); return;
-  }
-  players.push({ name, score: 0, status: 'active' });
-  inp.value = '';
-  save(); renderAdminPanel();
-  showToast('✅ ' + name + ' added!');
-}
-
-function adminRemovePlayer(i) {
-  const p = players[i];
-  if (!confirm('Remove ' + p.name + ' from the crawl?')) return;
-  // Clean up their visits
-  Object.keys(playerVisits).forEach(stop => {
-    playerVisits[stop] = playerVisits[stop].filter(pi => pi !== i).map(pi => pi > i ? pi - 1 : pi);
-  });
-  players.splice(i, 1);
-  if (currentUser === p.name) currentUser = null;
-  save(); renderTracker(); renderAdminPanel();
-  showToast('Removed ' + p.name);
-}
-
 function renderAdminPanel() {
   if (!adminUnlocked) return;
-
-  // Pub selector
-  const pubList = document.getElementById('adminPubList');
-  if (pubList) {
-    pubList.innerHTML = '';
-    PUBS.forEach(pub => {
-      const isCurrent = false; // current-stop highlight removed
-      const btn = document.createElement('button');
-      btn.style.cssText = 'background:' + (isCurrent ? 'rgba(255,211,41,0.15)' : 'var(--card)') + ';border:1px solid ' + (isCurrent ? 'var(--yellow)' : 'var(--border)') + ';border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--text);font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:700;width:100%;text-align:left;gap:8px;';
-      btn.innerHTML = '<span>#' + pub.stop + ' ' + pub.name + ' <span style="color:var(--muted);font-weight:400;font-size:12px;">' + pub.station + '</span></span>' + (isCurrent ? '<span style="color:var(--yellow);font-size:12px;white-space:nowrap;">▶ NOW</span>' : '');
-      btn.onclick = () => { adminCurrentStop = pub.stop; save(); renderAdminPanel(); renderTracker(); showToast('📍 Now at #' + pub.stop + ' ' + pub.name); };
-      pubList.appendChild(btn);
-    });
-  }
-
-  // Score editor
-  const scoreList = document.getElementById('adminScoreList');
-  if (scoreList) {
-    scoreList.innerHTML = '';
-    players.forEach((p, i) => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);';
-      row.innerHTML = '<span style="font-weight:700;font-size:15px;">' + p.name + '</span>' +
-        '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<button onclick="changeScore(' + i + ',-20)" style="background:var(--border);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>' +
-          '<span style="font-family:DM Mono,monospace;font-size:14px;min-width:52px;text-align:center;">' + p.score + ' pts</span>' +
-          '<button onclick="changeScore(' + i + ',20)" style="background:var(--border);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>' +
-        '</div>';
-      scoreList.appendChild(row);
-    });
-    if (!players.length) scoreList.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0;">No players yet</div>';
-  }
-
-  // Player list
-  const playerList = document.getElementById('adminPlayerList');
-  if (playerList) {
-    playerList.innerHTML = '';
-    if (!players.length) {
-      playerList.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0;">No players yet — add one below</div>';
-    } else {
-      players.forEach((p, i) => {
-        const row = document.createElement('div');
-        row.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;';
-        const isMe = p.name === currentUser;
-        row.innerHTML =
-          '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<span style="font-size:16px;font-weight:700;">' + p.name + '</span>' +
-            (isMe ? '<span style="font-size:10px;background:var(--yellow);color:var(--dark);padding:2px 6px;border-radius:10px;font-weight:900;">YOU</span>' : '') +
-          '</div>' +
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<span style="font-family:DM Mono,monospace;font-size:12px;color:var(--muted);">' + playerStopCount(i) + '/27 pubs · ' + p.score + 'pts</span>' +
-            (isMe ? '' : '<button onclick="adminRemovePlayer(' + i + ')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:13px;padding:4px 8px;cursor:pointer;">✕</button>') +
-          '</div>';
-        playerList.appendChild(row);
-      });
-    }
-  }
 
   updateNotifBtn();
 
@@ -1498,15 +1295,6 @@ function fireLeaveNotification(pubName, nextPubName) {
   });
 }
 
-// ── LEGACY (modal pw still works) ──
-function promptAdminUnlock() {
-  if (adminUnlocked) { lockAdmin(); return; }
-  document.getElementById('pwInput').value = '';
-  document.getElementById('pwInput').classList.remove('error');
-  document.getElementById('pwModal').classList.add('open');
-  setTimeout(() => document.getElementById('pwInput').focus(), 300);
-}
-
 function submitPassword() {
   const val = document.getElementById('pwInput').value;
   if (val === ADMIN_PASSWORD) {
@@ -1524,12 +1312,8 @@ function submitPassword() {
 
 function closePwModal() { document.getElementById('pwModal').classList.remove('open'); }
 
-function updateAdminBar() { /* legacy no-op */ }
-
-// ── LEADERBOARD ──
-// Leaderboard removed
-
 // ── PACE ──
+
 // Travel times in minutes between consecutive pubs (walk + tube + walk to next pub)
 // stop N -> stop N+1
 const TRAVEL_MINS = [
@@ -1562,6 +1346,7 @@ const TRAVEL_MINS = [
 ];
 
 let countdownInterval = null;
+let tenMinWarnedStop = null; // tracks which stop the 10-min warning has already fired for
 
 function buildSchedule(startMins, minsPerPub) {
   // Returns array of {stop, arrive, leave, travelToNext}
@@ -1753,8 +1538,11 @@ function startCountdown(schedule, minsPerPub) {
     banner.style.borderTop = '1px solid rgba(0,179,107,0.5)';
     document.getElementById('countdownHeaderLabel').textContent = 'LEAVE CURRENT PUB IN';
 
-    // 10 min warning notification
-    if (secsUntilLeave >= 599 && secsUntilLeave <= 601) fire10MinWarning(PUBS[currentIdx].name);
+    // 10 min warning notification — fire once per stop
+    if (secsUntilLeave >= 599 && secsUntilLeave <= 601 && tenMinWarnedStop !== cur.stop) {
+      tenMinWarnedStop = cur.stop;
+      fire10MinWarning(PUBS[currentIdx].name);
+    }
 
     if (secsUntilLeave <= 0) {
       const overdueMin = Math.round(-secsUntilLeave / 60);

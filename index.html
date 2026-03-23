@@ -955,7 +955,8 @@ function deletePhoto(stop, idx) {
 
 function renderPhotosTab() {
   const el = document.getElementById('photosContent');
-  const stops = PUBS.filter(p => pubPhotos[p.stop] && pubPhotos[p.stop].length > 0);
+  const orderedPubs = [...PUBS.slice(appStartPub - 1), ...PUBS.slice(0, appStartPub - 1)];
+  const stops = orderedPubs.filter(p => pubPhotos[p.stop] && pubPhotos[p.stop].length > 0);
   if (!stops.length) {
     el.innerHTML = '<div class="photos-empty"><div class="big">📸</div><p>No photos yet!<br>Check in at a pub and snap your pint.</p></div>';
     return;

@@ -130,13 +130,6 @@
   .lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain;}
   .lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:white;font-size:20px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 
-  /* ── LEADERBOARD ── */
-
-
-  .remove-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;flex-shrink:0;transition:color 0.2s;}
-  .remove-btn:hover{color:var(--red);}
-  .remove-btn:disabled{opacity:0.2;cursor:not-allowed;}
-
   /* admin unlock bar */
   .admin-bar{
     background:var(--card);border:1px solid var(--border);border-radius:10px;
@@ -452,6 +445,9 @@
   <img id="lightboxImg" src="" alt="">
 </div>
 
+<!-- Shared file input for row camera buttons (one reused instead of 27) -->
+<input type="file" accept="image/*" capture="environment" id="sharedCamInput" style="display:none;">
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
@@ -463,6 +459,18 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Shared camera input — one input reused for all pub rows
+let sharedCamStop = null;
+document.getElementById('sharedCamInput').addEventListener('change', function(e) {
+  if (sharedCamStop !== null) handlePhotoUploadFromRow(e, sharedCamStop);
+});
+function openRowCam(stop) {
+  sharedCamStop = stop;
+  const inp = document.getElementById('sharedCamInput');
+  inp.value = ''; // reset so same file can be re-selected
+  inp.click();
 }
 
 // Firebase initialised below after state declarations
@@ -480,7 +488,7 @@ async function fbRead() {
     if (str === lastFbData) return;
     lastFbData = str;
     const remoteVisited = Array.isArray(data.visited) ? data.visited.map(Number) : (data.visited ? Object.values(data.visited).map(Number) : []);
-    visited = remoteVisited;
+    visited = new Set(remoteVisited);
     checkinTimes = data.checkinTimes || checkinTimes;
     if (data.appStartTime) appStartTime = data.appStartTime;
     if (data.appMinsPerPub) appMinsPerPub = data.appMinsPerPub;
@@ -496,10 +504,9 @@ async function fbRead() {
     // Always merge photos — combine Firebase + local so all phones see all photos
     if (data.pubPhotos) {
       Object.keys(data.pubPhotos).forEach(stop => {
-        if (!pubPhotos[stop]) pubPhotos[stop] = [];
-        data.pubPhotos[stop].forEach(url => {
-          if (!pubPhotos[stop].includes(url)) pubPhotos[stop].push(url);
-        });
+        const existing = new Set(pubPhotos[stop] || []);
+        data.pubPhotos[stop].forEach(url => existing.add(url));
+        pubPhotos[stop] = [...existing];
       });
     }
     saveLocal();
@@ -519,10 +526,10 @@ let fbSaving = false;
 async function fbSave() {
   fbSaving = true;
   try {
-    const body = JSON.stringify({ visited, pubPhotos, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
+    const body = JSON.stringify({ visited: [...visited], pubPhotos, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
     // Update skip-check with same fields fbRead uses
     const savePhotoCount = Object.values(pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
-    lastFbData = JSON.stringify({ v: visited, ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub, tm: travelMode, pc: savePhotoCount });
+    lastFbData = JSON.stringify({ v: [...visited], ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub, tm: travelMode, pc: savePhotoCount });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
@@ -530,7 +537,7 @@ async function fbSave() {
 }
 
 function saveLocal() {
-  localStorage.setItem('clp_visited',  JSON.stringify(visited));
+  localStorage.setItem('clp_visited',  JSON.stringify([...visited]));
   localStorage.setItem('clp_checkinTimes', JSON.stringify(checkinTimes));
   try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
 }
@@ -538,13 +545,6 @@ function saveLocal() {
 
 const ADMIN_PASSWORD = 'pub';
 
-// Call this in console to wipe test photos: resetTestPhotos()
-function resetTestPhotos() {
-  pubPhotos = {};
-  save();
-  renderTracker();
-  showToast('📸 Photos cleared');
-}
 const CLOUDINARY_CLOUD = 'dwcrs0vkk';
 const CLOUDINARY_PRESET = 'pub-crawl';
 const CLOUDINARY_BASE = 'https://res.cloudinary.com/' + CLOUDINARY_CLOUD + '/image/upload/';
@@ -642,7 +642,7 @@ const SURVIVAL = [
 ];
 
 // ── STATE ── always fresh — Firebase is source of truth
-let visited      = [];
+let visited      = new Set();
 let pubPhotos    = {};
 let adminUnlocked = false;
 let modalStop = null;
@@ -714,14 +714,11 @@ function getSchedule() {
 function toggleCheckin(stop) {
   if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
   const stopNum = Number(stop);
-  // Always coerce visited to numbers to prevent string/number mismatch
-  visited = visited.map(Number);
-  const isDone = visited.some(v => Number(v) === stopNum || String(v) === String(stopNum));
+  const isDone = visited.has(stopNum);
   if (!isDone) {
     // CHECK IN
-    visited.push(stopNum);
-    const now = new Date();
-    checkinTimes[stopNum] = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    visited.add(stopNum);
+    checkinTimes[stopNum] = getNowInMinutes();
     // Clear travel mode — we've arrived at the next pub
     travelMode = false;
     travelStartTime = null;
@@ -729,11 +726,11 @@ function toggleCheckin(stop) {
     // Set start time to earliest checkin
     const earliest = Math.min(...Object.values(checkinTimes));
     const startEl = document.getElementById('startTime');
-    if (startEl) startEl.value = Math.floor(earliest/60).toString().padStart(2,'0') + ':' + Math.floor(earliest%60).toString().padStart(2,'0');
+    if (startEl) startEl.value = fmtTime(earliest);
     showToast('🍺 Stop #' + stopNum + ' checked in!');
   } else {
     // UNDO — remove from all state
-    visited = visited.filter(s => Number(s) !== stopNum && String(s) !== String(stopNum));
+    visited.delete(stopNum);
     delete checkinTimes[stopNum];
     if (Object.keys(checkinTimes).length === 0) {
       appStartTime = '10:00';
@@ -757,17 +754,14 @@ function renderTracker() {
   const orderedPubs = [...PUBS.slice(startPubNum - 1), ...PUBS.slice(0, startPubNum - 1)];
   orderedPubs.forEach((pub, idx) => {
     const displayStop = idx + 1;
-    const globalDone = visited.includes(pub.stop);
+    const globalDone = visited.has(pub.stop);
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
-    // Find the next uncompleted pub after the last completed one
     // Find the next uncompleted pub in display order
-    const allDoneStops = new Set(visited.map(Number));
-    const lastDoneIdx = orderedPubs.reduce((best, p, i) => allDoneStops.has(p.stop) ? i : best, -1);
+    const lastDoneIdx = orderedPubs.reduce((best, p, i) => visited.has(p.stop) ? i : best, -1);
     const isNextTarget = !globalDone && idx === lastDoneIdx + 1;
     row.className = 'pub-row' + (globalDone ? ' done' : isNextTarget ? ' next-target' : ' future');
     row.id = 'pub-' + pub.stop;
-    const avatars = ''; // removed player avatars
     const thumb = photos.length ? '<img class="pub-thumb" src="' + photos[photos.length-1] + '" alt="pint">' : '';
     const sched = schedule[pub.stop - 1];
     const crawlStarted = Object.keys(checkinTimes).length > 0;
@@ -779,24 +773,19 @@ function renderTracker() {
       '<div class="pub-info">' +
         '<div class="pub-name-row"><span class="pub-name">' + pub.name + '</span>' + timeLabel + '</div>' +
         '<div class="pub-station">' + pub.station + (sched.skipped || !crawlStarted ? '' : ' · leave ' + fmtTime(sched.leave)) + '</div>' +
-        (avatars ? '<div class="checkin-avatars">' + avatars + '</div>' : '') +
         snapNudge +
       '</div>' +
       thumb +
       '<div class="check-icon">🍺</div>' +
       '<button class="cam-btn" title="Add photo">📷</button>' +
-      '<input type="file" accept="image/*" capture="environment" class="cam-input" style="display:none;">' +
       '<button class="map-btn" title="Open in Maps">📍</button>';
     row.querySelector('.map-btn').addEventListener('click', e => { e.stopPropagation(); openMap(pub.q); });
-    const camBtn = row.querySelector('.cam-btn');
-    const camInput = row.querySelector('.cam-input');
-    camBtn.addEventListener('click', e => { e.stopPropagation(); camInput.click(); });
-    camInput.addEventListener('change', e => { e.stopPropagation(); handlePhotoUploadFromRow(e, pub.stop); });
+    row.querySelector('.cam-btn').addEventListener('click', e => { e.stopPropagation(); openRowCam(pub.stop); });
     const nudgeEl = row.querySelector('.snap-nudge');
-    if (nudgeEl) nudgeEl.addEventListener('click', e => { e.stopPropagation(); camInput.click(); });
+    if (nudgeEl) nudgeEl.addEventListener('click', e => { e.stopPropagation(); openRowCam(pub.stop); });
     row.addEventListener('click', () => {
       if (!adminUnlocked) { showToast('🔒 Admin checks in pubs'); return; }
-      const alreadyDone = visited.map(Number).includes(pub.stop);
+      const alreadyDone = visited.has(pub.stop);
       if (!alreadyDone) {
         showPhotoConfirm(pub.stop);
       } else {
@@ -809,8 +798,7 @@ function renderTracker() {
 }
 
 function updateProgress() {
-  const allDone = new Set(visited.map(Number));
-  const n = allDone.size;
+  const n = visited.size;
   document.getElementById('headerCount').textContent = n + '/27';
   document.getElementById('progressFill').style.width = (n/27*100) + '%';
   // Show message — exact match first, then highest match
@@ -825,12 +813,10 @@ function updateProgress() {
     banner.style.borderLeft = '3px solid #4a9eff';
     banner.style.background = 'rgba(74,158,255,0.1)';
 
-    const checkedNums = new Set(visited.map(Number));
-
-    if (checkedNums.size > 0) {
+    if (visited.size > 0) {
       // Find next pub using display order (respects start pub + wrap-around)
       const orderedPubs = [...PUBS.slice(appStartPub - 1), ...PUBS.slice(0, appStartPub - 1)];
-      const nextPub = orderedPubs.find(p => !checkedNums.has(p.stop));
+      const nextPub = orderedPubs.find(p => !visited.has(p.stop));
       if (nextPub) {
         banner.style.display = 'block';
         const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nextPub.q);
@@ -860,12 +846,11 @@ function openModal(stop) {
 
   const btn = document.createElement('button');
   btn.className = 'player-select-btn';
-  const done = visited.map(Number).includes(stop);
+  const done = visited.has(stop);
   btn.innerHTML = `<span>${done ? '✓ Checked in — tap to undo' : '✅ Check in'}</span>`;
   btn.onclick = () => {
-    const idx = visited.map(Number).indexOf(stop);
-    if (idx === -1) { visited.push(stop); showToast('🍺 Stop ' + stop + ' checked in!'); }
-    else { visited.splice(idx, 1); }
+    if (!visited.has(stop)) { visited.add(stop); showToast('🍺 Stop ' + stop + ' checked in!'); }
+    else { visited.delete(stop); }
     save(); renderTracker(); openModal(stop);
   };
   list.appendChild(btn);
@@ -930,7 +915,7 @@ async function handlePhotoUploadFromRow(e, stop) {
     showToast('📸 Photo saved!');
     if (pendingPhotoCheckin === stop) {
       pendingPhotoCheckin = null;
-      if (!visited.map(Number).includes(stop)) toggleCheckin(stop);
+      if (!visited.has(stop)) toggleCheckin(stop);
     }
   } catch(err) {
     console.error(err);
@@ -970,7 +955,8 @@ function deletePhoto(stop, idx) {
 
 function renderPhotosTab() {
   const el = document.getElementById('photosContent');
-  const stops = PUBS.filter(p => pubPhotos[p.stop] && pubPhotos[p.stop].length > 0);
+  const orderedPubs = [...PUBS.slice(appStartPub - 1), ...PUBS.slice(0, appStartPub - 1)];
+  const stops = orderedPubs.filter(p => pubPhotos[p.stop] && pubPhotos[p.stop].length > 0);
   if (!stops.length) {
     el.innerHTML = '<div class="photos-empty"><div class="big">📸</div><p>No photos yet!<br>Check in at a pub and snap your pint.</p></div>';
     return;
@@ -1030,6 +1016,13 @@ function updateModalAdminBtn() {
 
 // ── ADMIN TAB ──
 
+function getLastVisitedStop() {
+  let lastStop = 0;
+  for (let i = 0; i < 27; i++) {
+    if (visited.has(i + 1)) lastStop = i + 1;
+  }
+  return lastStop;
+}
 
 function submitAdminTabPassword() {
   const inp = document.getElementById('adminTabPwInput');
@@ -1049,21 +1042,14 @@ function submitAdminTabPassword() {
 
 
 function adminStartTravel() {
-  if (visited.length === 0) { showToast('Check in at a pub first!'); return; }
-  const visitedNums = visited.map(Number);
-  let lastStop = 0;
-  for (let i = 0; i < 27; i++) {
-    if (visitedNums.includes(i + 1)) lastStop = i + 1;
-  }
+  if (visited.size === 0) { showToast('Check in at a pub first!'); return; }
+  const lastStop = getLastVisitedStop();
   if (lastStop === 27) { showToast('Already at the last pub!'); return; }
   travelMode = true;
   travelFromStop = lastStop;
   // Set leave time to now so travel starts immediately
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   const mpp = parseInt((document.getElementById('minsPerPub') || {value:'20'}).value) || 20;
-  checkinTimes[lastStop] = nowMins - mpp; // backdates arrival so leave time = now
-  const pub = PUBS.find(p => p.stop === lastStop);
+  checkinTimes[lastStop] = getNowInMinutes() - mpp; // backdates arrival so leave time = now
   const nextPub = PUBS.find(p => p.stop === lastStop + 1);
   save();
   showToast('🚇 Travelling from #' + lastStop + ' to ' + nextPub.name);
@@ -1078,31 +1064,21 @@ function adminStopTravel() {
 }
 
 function adminResetPubTimer() {
-  const visitedNums = visited.map(Number);
-  let lastStop = 0;
-  for (let i = 0; i < 27; i++) {
-    if (visitedNums.includes(i + 1)) lastStop = i + 1;
-  }
+  const lastStop = getLastVisitedStop();
   if (lastStop === 0) { showToast('No pub checked in yet!'); return; }
   // Reset checkin time for current pub to now
-  const now = new Date();
-  checkinTimes[lastStop] = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  checkinTimes[lastStop] = getNowInMinutes();
   travelMode = false;
   save();
   showToast('↩️ Pub timer reset for #' + lastStop);
 }
 
 function adminStartLate() {
-  if (visited.length === 0) { showToast('Check in at a pub first!'); return; }
+  if (visited.size === 0) { showToast('Check in at a pub first!'); return; }
   // Force travel mode but set travelStartTime to the past so secsUntilArrival is already negative
   travelMode = true;
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-  // Find last checked stop and its scheduled leave time
-  let lastStop = 0;
-  for (let i = 0; i < 27; i++) {
-    if (visited.some(v => Number(v) === i + 1)) lastStop = i + 1;
-  }
+  const nowMins = getNowInMinutes();
+  const lastStop = getLastVisitedStop();
   travelFromStop = lastStop;
   // Override checkinTimes so leave time is already in the past
   const mpp = parseInt((document.getElementById('minsPerPub') || {value:'20'}).value) || 20;
@@ -1140,11 +1116,7 @@ function renderAdminPanel() {
   // Update current pub label in travel section
   const label = document.getElementById('adminCurrentPubLabel');
   if (label) {
-    const visitedNums = visited.map(Number);
-    let lastStop = 0;
-    for (let i = 0; i < 27; i++) {
-      if (visitedNums.includes(i + 1)) lastStop = i + 1;
-    }
+    const lastStop = getLastVisitedStop();
     if (lastStop === 0) {
       label.textContent = 'No pub checked in yet.';
       label.style.color = 'var(--muted)';
@@ -1268,8 +1240,7 @@ function photoConfirmNo() {
   closePhotoConfirm();
   if (stop === null) return;
   pendingPhotoCheckin = stop;
-  const rowInput = document.querySelector('#pub-' + stop + ' .cam-input');
-  if (rowInput) rowInput.click();
+  openRowCam(stop);
 }
 
 // ── PACE ──
@@ -1334,10 +1305,26 @@ function fmtTime(totalMins) {
   return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
 }
 
+function getNowInMinutes() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+}
+
 function fmtDuration(mins) {
   const h = Math.floor(Math.abs(mins) / 60);
   const m = Math.abs(mins) % 60;
   return (h > 0 ? h + 'h ' : '') + m + 'm';
+}
+
+let _plainScheduleCache = null;
+let _plainScheduleKey = '';
+function getPlainSchedule(startMins, mpp) {
+  const key = startMins + ':' + mpp;
+  if (key !== _plainScheduleKey) {
+    _plainScheduleKey = key;
+    _plainScheduleCache = buildSchedule(startMins, mpp);
+  }
+  return _plainScheduleCache;
 }
 
 function calcPace() {
@@ -1366,8 +1353,8 @@ function calcPace() {
   // Update est finish summary
   const summary = document.getElementById('trackerPaceSummary');
   if (summary) {
-    const checkedCount = visited.length;
-    const plainSchedule = buildSchedule(startMins, mpp);
+    const checkedCount = visited.size;
+    const plainSchedule = getPlainSchedule(startMins, mpp);
     const scheduledFinish = plainSchedule[plainSchedule.length - 1].leave;
 
     let realFinish = scheduledFinish;
@@ -1397,14 +1384,10 @@ function calcPace() {
       }
     }
 
-    if (checkedCount === 0) {
-      summary.innerHTML = 'Est. finish: <strong style="color:var(--yellow);">Not started</strong>';
-    } else {
-      summary.innerHTML =
-        'Done: <strong style="color:var(--text);">' + checkedCount + '/27</strong>' +
-        ' &nbsp;·&nbsp; Est. finish: <strong style="color:var(--yellow);">~' + fmtTime(realFinish) + '</strong>' +
-        ' &nbsp;' + paceNote;
-    }
+    summary.innerHTML =
+      'Done: <strong style="color:var(--text);">' + checkedCount + '/27</strong>' +
+      ' &nbsp;·&nbsp; Est. finish: <strong style="color:var(--yellow);">~' + fmtTime(realFinish) + '</strong>' +
+      ' &nbsp;' + paceNote;
   }
 
   // Re-render tracker so pub times + next stop banner update
@@ -1420,7 +1403,7 @@ function startCountdown(schedule, minsPerPub) {
 
   function tick() {
     // ── STATE 0: Not started ──
-    if (visited.length === 0) {
+    if (visited.size === 0) {
       banner.style.background = 'rgba(255,211,41,0.1)';
       banner.style.borderTop = '1px solid rgba(255,211,41,0.4)';
       document.getElementById('countdownHeaderLabel').textContent = 'CRAWL STATUS';
@@ -1430,14 +1413,12 @@ function startCountdown(schedule, minsPerPub) {
       return;
     }
 
-    const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const nowMins = getNowInMinutes();
 
     // Find last checked-in pub index
-    const visitedNums = visited.map(Number);
     let currentIdx = -1;
     for (let i = 0; i < 27; i++) {
-      if (visitedNums.includes(i + 1)) currentIdx = i;
+      if (visited.has(i + 1)) currentIdx = i;
     }
     if (currentIdx === -1) return;
 

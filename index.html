@@ -956,7 +956,7 @@ function deletePhoto(stop, idx) {
 function renderPhotosTab() {
   const el = document.getElementById('photosContent');
   const orderedPubs = [...PUBS.slice(appStartPub - 1), ...PUBS.slice(0, appStartPub - 1)];
-  const stops = orderedPubs.filter(p => pubPhotos[p.stop] && pubPhotos[p.stop].length > 0);
+  const stops = orderedPubs.map((p, i) => ({ ...p, crawlPos: i + 1 })).filter(p => pubPhotos[p.stop] && pubPhotos[p.stop].length > 0);
   if (!stops.length) {
     el.innerHTML = '<div class="photos-empty"><div class="big">📸</div><p>No photos yet!<br>Check in at a pub and snap your pint.</p></div>';
     return;
@@ -967,7 +967,7 @@ function renderPhotosTab() {
     section.className = 'photo-stop-section';
     section.innerHTML =
       '<div class="photo-stop-header">' +
-        '<div class="photo-stop-num">' + pub.stop + '</div>' +
+        '<div class="photo-stop-num">' + pub.crawlPos + '</div>' +
         '<div><div class="photo-stop-name">' + pub.name + '</div><div class="photo-stop-station">' + pub.station + '</div></div>' +
       '</div>';
     const masonry = document.createElement('div');

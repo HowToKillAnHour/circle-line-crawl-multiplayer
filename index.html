@@ -62,6 +62,11 @@
   .pubs-grid{display:flex;flex-direction:column;gap:1px;background:var(--border);}
   .pub-row{background:var(--card);display:flex;align-items:center;gap:14px;padding:16px 16px;cursor:pointer;transition:background 0.15s;user-select:none;position:relative;}
   .pub-row.done{background:#111;border-left:3px solid #333 !important;opacity:0.45;}
+  .pub-row.at-pub{background:#1a1800;border-left:3px solid var(--yellow) !important;}
+  .pub-row.at-pub .stop-num{background:var(--yellow);color:var(--dark);}
+  .pub-row.at-pub .circle-dot{background:var(--yellow);}
+  .pub-row.at-pub .check-icon{background:transparent;border-color:var(--yellow);opacity:0.6;}
+  .pub-row.at-pub .pub-name{color:var(--yellow);}
   .pub-row:active{background:#1a1a1a;}
   .stop-num{width:34px;height:34px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;flex-shrink:0;transition:all 0.25s;}
   .pub-row.done .stop-num{background:#222;color:#444;font-size:13px;}
@@ -711,23 +716,45 @@ function getSchedule() {
   return schedule;
 }
 
+function arriveAtPub(stop) {
+  if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
+  const stopNum = Number(stop);
+  checkinTimes[stopNum] = getNowInMinutes();
+  // Clear travel mode — we've arrived
+  travelMode = false;
+  travelStartTime = null;
+  travelFromStop = null;
+  // Set start time to earliest checkin
+  const earliest = Math.min(...Object.values(checkinTimes));
+  const startEl = document.getElementById('startTime');
+  if (startEl) startEl.value = fmtTime(earliest);
+  showToast('🍺 Arrived at stop #' + stopNum + '! Timer started');
+  const row = document.getElementById('pub-' + stopNum);
+  if (row) { row.classList.add('just-done'); row.classList.add('at-pub'); row.classList.remove('future','next-target'); }
+  save();
+  calcPace();
+}
+
 function toggleCheckin(stop) {
   if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
   const stopNum = Number(stop);
   const isDone = visited.has(stopNum);
   if (!isDone) {
-    // CHECK IN
+    // COMPLETE — mark visited and kick off travel
     visited.add(stopNum);
-    checkinTimes[stopNum] = getNowInMinutes();
-    // Clear travel mode — we've arrived at the next pub
-    travelMode = false;
-    travelStartTime = null;
-    travelFromStop = null;
-    // Set start time to earliest checkin
-    const earliest = Math.min(...Object.values(checkinTimes));
-    const startEl = document.getElementById('startTime');
-    if (startEl) startEl.value = fmtTime(earliest);
-    showToast('🍺 Stop #' + stopNum + ' checked in!');
+    // Backdate check-in so travel timer starts from now
+    checkinTimes[stopNum] = getNowInMinutes() - appMinsPerPub;
+    // Auto-start travel mode to next pub
+    if (stopNum < 27) {
+      travelMode = true;
+      travelFromStop = stopNum;
+      const pub = PUBS.find(p => p.stop === stopNum);
+      const nextPub = PUBS.find(p => p.stop === stopNum + 1);
+      if (pub && nextPub) fireLeaveNotification(pub.name, nextPub.name);
+      showToast('✅ Done at #' + stopNum + '! Head to ' + nextPub.name);
+    } else {
+      showToast('🎉 Final pub done! Crawl complete!');
+    }
   } else {
     // UNDO — remove from all state
     visited.delete(stopNum);
@@ -737,6 +764,9 @@ function toggleCheckin(stop) {
       const startEl = document.getElementById('startTime');
       if (startEl) startEl.value = '10:00';
     }
+    travelMode = false;
+    travelStartTime = null;
+    travelFromStop = null;
     showToast('↩️ Stop #' + stopNum + ' unchecked');
   }
   const row = document.getElementById('pub-' + stop);
@@ -755,12 +785,13 @@ function renderTracker() {
   orderedPubs.forEach((pub, idx) => {
     const displayStop = idx + 1;
     const globalDone = visited.has(pub.stop);
+    const atPub = !globalDone && checkinTimes[pub.stop] !== undefined;
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
     // Find the next uncompleted pub in display order
     const lastDoneIdx = orderedPubs.reduce((best, p, i) => visited.has(p.stop) ? i : best, -1);
-    const isNextTarget = !globalDone && idx === lastDoneIdx + 1;
-    row.className = 'pub-row' + (globalDone ? ' done' : isNextTarget ? ' next-target' : ' future');
+    const isNextTarget = !globalDone && !atPub && idx === lastDoneIdx + 1;
+    row.className = 'pub-row' + (globalDone ? ' done' : atPub ? ' at-pub' : isNextTarget ? ' next-target' : ' future');
     row.id = 'pub-' + pub.stop;
     const thumb = photos.length ? '<img class="pub-thumb" src="' + photos[photos.length-1] + '" alt="pint">' : '';
     const sched = schedule[pub.stop - 1];
@@ -785,11 +816,12 @@ function renderTracker() {
     if (nudgeEl) nudgeEl.addEventListener('click', e => { e.stopPropagation(); openRowCam(pub.stop); });
     row.addEventListener('click', () => {
       if (!adminUnlocked) { showToast('🔒 Admin checks in pubs'); return; }
-      const alreadyDone = visited.has(pub.stop);
-      if (!alreadyDone) {
-        showPhotoConfirm(pub.stop);
+      if (visited.has(pub.stop)) {
+        toggleCheckin(pub.stop); // undo completed pub
+      } else if (checkinTimes[pub.stop] !== undefined) {
+        showPhotoConfirm(pub.stop); // second tap: photo prompt → complete
       } else {
-        toggleCheckin(pub.stop); // undo — no photo prompt needed
+        arriveAtPub(pub.stop); // first tap: start timer
       }
     });
     grid.appendChild(row);

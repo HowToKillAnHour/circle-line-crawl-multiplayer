@@ -186,6 +186,11 @@
   @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
   .pub-row.just-done{animation:pop 0.3s ease;}
+  .pub-row.arrived{background:#1a0e00;border-color:#ff9944 !important;border-width:2px;}
+  .pub-row.arrived .stop-num{background:#ff9944;color:var(--dark);}
+  .pub-row.arrived .circle-dot{background:#ff9944;}
+  .pub-row.arrived .pub-name{color:#ff9944;}
+  .pub-row.arrived .check-icon{background:#ff9944;border-color:#ff9944;opacity:1;transform:scale(1.05);box-shadow:0 0 8px rgba(255,153,68,0.35);}
 
   .pub-name-row{display:flex;align-items:baseline;gap:8px;}
   .pub-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--yellow);opacity:0.8;font-weight:400;white-space:nowrap;}
@@ -362,6 +367,19 @@
   </div>
 </div>
 
+<!-- ══ PHOTO PROMPT OVERLAY ══ -->
+<div class="modal-overlay" id="photoPromptOverlay" onclick="bgClosePhotoPrompt(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Pub complete! 🍺</div>
+    <div class="modal-pub-name" id="photoPromptPubName"></div>
+    <p style="text-align:center;color:var(--muted);font-size:15px;margin-bottom:24px;">Snap a pint photo for the memories?</p>
+    <input type="file" accept="image/*" capture="environment" id="photoPromptInput" style="display:none;" onchange="handlePhotoPromptUpload(event)">
+    <button onclick="completeWithPhoto()" style="width:100%;padding:14px;background:var(--yellow);color:var(--dark);border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;margin-bottom:10px;">📷 Take photo</button>
+    <button onclick="completeSkipPhoto()" style="width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;cursor:pointer;">✓ Skip &amp; complete</button>
+  </div>
+</div>
+
 <!-- ══ ADMIN PASSWORD MODAL ══ -->
 <div class="pw-modal" id="pwModal">
   <div class="pw-box">
@@ -410,6 +428,9 @@ async function fbRead() {
     playerVisits = data.playerVisits || playerVisits;
     adminCurrentStop = data.adminCurrentStop || null;
     checkinTimes = data.checkinTimes || checkinTimes;
+    if (Array.isArray(data.arrivedPubs)) {
+      data.arrivedPubs.forEach(s => { if (!arrivedPubs.includes(s)) arrivedPubs.push(s); });
+    }
     // Always merge photos — combine Firebase + local so all phones see all photos
     if (data.pubPhotos) {
       Object.keys(data.pubPhotos).forEach(stop => {
@@ -445,7 +466,7 @@ function fbListen() {
 async function fbSave() {
   fbSaving = true;
   try {
-    const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes });
+    const body = JSON.stringify({ players, visited, playerVisits, pubPhotos, adminCurrentStop: adminCurrentStop || null, checkinTimes, arrivedPubs });
     lastFbData = body; // update so we don't re-process our own write
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
@@ -459,6 +480,7 @@ function saveLocal() {
   localStorage.setItem('clp_pvisits',  JSON.stringify(playerVisits));
   localStorage.setItem('clp_currentStop', JSON.stringify(adminCurrentStop));
   localStorage.setItem('clp_checkinTimes', JSON.stringify(checkinTimes));
+  localStorage.setItem('clp_arrived',      JSON.stringify(arrivedPubs));
   try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
 }
 
@@ -635,6 +657,7 @@ let adminUnlocked = false;
 let modalStop = null;
 let adminCurrentStop = JSON.parse(localStorage.getItem('clp_currentStop') || 'null');
 let checkinTimes = JSON.parse(localStorage.getItem('clp_checkinTimes') || '{}');
+let arrivedPubs  = JSON.parse(localStorage.getItem('clp_arrived')      || '[]');
 
 // ── FIREBASE REST API (no SDK needed) ──
 const FB_URL = 'https://circle-line-crawl-53191-default-rtdb.europe-west1.firebasedatabase.app/crawl.json';
@@ -680,47 +703,108 @@ function getSchedule() {
 
 function toggleCheckin(stop) {
   if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
-  const ci = currentPlayerIndex();
-  if (!playerVisits[stop]) playerVisits[stop] = [];
-  const vi = playerVisits[stop].indexOf(ci);
-  if (vi === -1) {
-    playerVisits[stop].push(ci);
-    if (!visited.includes(stop)) visited.push(stop);
-    // Record actual arrival time
-    const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-    checkinTimes[stop] = nowMins;
-    // Update start time to earliest actual check-in
-    const earliest = Math.min(...Object.values(checkinTimes));
-    const eh = Math.floor(earliest / 60);
-    const em = Math.floor(earliest % 60);
-    const timeStr = eh.toString().padStart(2,'0') + ':' + em.toString().padStart(2,'0');
-    const startEl = document.getElementById('startTime');
-    if (startEl && startEl.value !== timeStr) {
-      startEl.value = timeStr;
-      calcPace();
+
+  const isDone    = visited.includes(stop);
+  const isArrived = arrivedPubs.includes(stop);
+
+  if (isDone) {
+    // Undo completed pub — put back to arrived state so timer still runs
+    visited = visited.filter(s => s !== stop);
+    const ci = currentPlayerIndex();
+    if (playerVisits[stop]) {
+      playerVisits[stop] = playerVisits[stop].filter(i => i !== ci);
+      if (!playerVisits[stop].length) delete playerVisits[stop];
     }
-    showToast('🍺 Stop #' + stop + ' checked in!');
-  } else {
-    playerVisits[stop].splice(vi, 1);
-    if (!playerVisits[stop].length) {
-      visited = visited.filter(s => s !== stop);
-      delete playerVisits[stop]; // remove empty arrays so Firebase syncs the removal
-    }
-    delete checkinTimes[stop];
-    // If no pubs left checked, clear start time
-    if (Object.keys(checkinTimes).length === 0) {
-      const startEl = document.getElementById('startTime');
-      if (startEl) { startEl.value = '11:00'; calcPace(); }
-    }
-    showToast('Unchecked stop #' + stop);
+    showToast('↩️ Unchecked stop #' + stop);
+    const row = document.getElementById('pub-' + stop);
+    if (row) row.classList.add('just-done');
+    save(); renderTracker(); calcPace();
+    return;
   }
+
+  if (isArrived) {
+    // 2nd tap — open photo prompt then complete
+    openPhotoPrompt(stop);
+    return;
+  }
+
+  // 1st tap — record arrival and start timer
+  arrivedPubs.push(stop);
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  checkinTimes[stop] = nowMins;
+  // Update start time to earliest actual arrival
+  const earliest = Math.min(...Object.values(checkinTimes));
+  const eh = Math.floor(earliest / 60);
+  const em = Math.floor(earliest % 60);
+  const timeStr = eh.toString().padStart(2,'0') + ':' + em.toString().padStart(2,'0');
+  const startEl = document.getElementById('startTime');
+  if (startEl && startEl.value !== timeStr) startEl.value = timeStr;
+  calcPace();
+  showToast('🕐 Timer started at stop #' + stop + '! Tap again when done.');
   const row = document.getElementById('pub-' + stop);
   if (row) row.classList.add('just-done');
-  save();
-  renderTracker();
-  calcPace(); // recalculate finish time based on actual pace
-  // Restart countdown so it reacts to the new check-in
+  save(); renderTracker();
+  const s = (startEl ? startEl.value : '11:00');
+  const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
+  const [sh, sm] = s.split(':').map(Number);
+  startCountdown(buildSchedule(sh * 60 + sm, mpp), mpp);
+}
+
+// ── PHOTO PROMPT & COMPLETION ──
+let _photoPromptStop = null;
+
+function openPhotoPrompt(stop) {
+  _photoPromptStop = stop;
+  const pub = PUBS.find(p => p.stop === stop);
+  document.getElementById('photoPromptPubName').textContent = '#' + stop + ' ' + pub.name;
+  document.getElementById('photoPromptOverlay').classList.add('open');
+}
+
+function bgClosePhotoPrompt(e) {
+  if (e.target === document.getElementById('photoPromptOverlay')) closePhotoPrompt();
+}
+
+function closePhotoPrompt() {
+  document.getElementById('photoPromptOverlay').classList.remove('open');
+}
+
+function completeWithPhoto() {
+  document.getElementById('photoPromptInput').click();
+  // Completion fires inside handlePhotoPromptUpload after upload
+}
+
+function handlePhotoPromptUpload(event) {
+  const stop = _photoPromptStop;
+  if (!stop) return;
+  closePhotoPrompt();
+  handlePhotoUploadFromRow(event, stop);
+  _doCompleteCheckin(stop);
+}
+
+function completeSkipPhoto() {
+  const stop = _photoPromptStop;
+  closePhotoPrompt();
+  _doCompleteCheckin(stop);
+}
+
+function _doCompleteCheckin(stop) {
+  const ci = currentPlayerIndex();
+  if (!playerVisits[stop]) playerVisits[stop] = [];
+  if (!playerVisits[stop].includes(ci)) playerVisits[stop].push(ci);
+  if (!visited.includes(stop)) visited.push(stop);
+  showToast('🍺 Stop #' + stop + ' done!');
+
+  // Fire travel notification to get everyone moving
+  const pubIdx = PUBS.findIndex(p => p.stop === stop);
+  if (pubIdx >= 0 && pubIdx < 26) {
+    fireTravelNotification(PUBS[pubIdx].name, PUBS[pubIdx + 1].station, stop + 1);
+  }
+
+  const row = document.getElementById('pub-' + stop);
+  if (row) row.classList.add('just-done');
+  save(); renderTracker(); calcPace();
+  // Restart countdown so travel timer kicks in immediately
   const s = document.getElementById('startTime').value || '11:00';
   const mpp = parseInt(document.getElementById('minsPerPub').value) || 20;
   const [sh, sm] = s.split(':').map(Number);
@@ -734,10 +818,10 @@ function renderTracker() {
   PUBS.forEach(pub => {
     const visitors = playerVisits[pub.stop] || [];
     const globalDone = visited.includes(pub.stop) || visitors.length > 0;
+    const isArrived = arrivedPubs.includes(pub.stop) && !globalDone;
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
-    const isCurrent = false; // current-stop highlight removed
-    row.className = 'pub-row' + (globalDone ? ' done' : '') + (isCurrent ? ' current-stop' : '');
+    row.className = 'pub-row' + (globalDone ? ' done' : isArrived ? ' arrived' : '');
     row.id = 'pub-' + pub.stop;
     const avatars = ''; // removed player avatars
     const thumb = photos.length ? '<img class="pub-thumb" src="' + photos[photos.length-1] + '" alt="pint">' : '';
@@ -752,7 +836,7 @@ function renderTracker() {
         (avatars ? '<div class="checkin-avatars">' + avatars + '</div>' : '') +
       '</div>' +
       thumb +
-      '<div class="check-icon">🍺</div>' +
+      '<div class="check-icon">' + (globalDone ? '🍺' : isArrived ? '🕐' : '🍺') + '</div>' +
       '<button class="cam-btn" title="Add photo">📷</button>' +
       '<input type="file" accept="image/*" capture="environment" class="cam-input" style="display:none;">' +
       '<button class="map-btn" title="Open in Maps">📍</button>';
@@ -1253,6 +1337,16 @@ function fire10MinWarning(pubName) {
   });
 }
 
+function fireTravelNotification(fromPubName, toStation, toStop) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  new Notification('🚇 Time to travel!', {
+    body: 'Leave ' + fromPubName + ' → head to ' + toStation + ' · stop #' + toStop,
+    icon: '',
+    tag: 'travel-now',
+    renotify: true
+  });
+}
+
 function fireLeaveNotification(pubName, nextStation) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   new Notification('🚇 Time to leave! ' + pubName, {
@@ -1416,15 +1510,14 @@ function startCountdown(schedule, minsPerPub) {
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
 
-    // Find current pub — prefer last actually checked-in stop, fall back to schedule
+    // Find current pub — prefer last arrived/completed stop, fall back to schedule
     let currentIdx = -1;
-    // First check actual check-ins
     for (let i = 0; i < 27; i++) {
-      if (visited.includes(i + 1) || (playerVisits[i + 1] && playerVisits[i + 1].length > 0)) {
+      if (arrivedPubs.includes(i + 1) || visited.includes(i + 1) || (playerVisits[i + 1] && playerVisits[i + 1].length > 0)) {
         currentIdx = i;
       }
     }
-    // If nothing checked in yet, use schedule time
+    // If nothing arrived yet, use schedule time
     if (currentIdx === -1) {
       for (let i = 0; i < schedule.length; i++) {
         if (nowMins >= schedule[i].arrive) currentIdx = i;
@@ -1453,6 +1546,29 @@ function startCountdown(schedule, minsPerPub) {
       return;
     }
 
+    banner.style.display = 'block';
+
+    const isCurrentPubComplete = visited.includes(cur.stop) || (playerVisits[cur.stop] && playerVisits[cur.stop].length > 0);
+
+    if (isCurrentPubComplete && currentIdx < 26) {
+      // Travel timer — pub is done, count down to next scheduled arrival
+      const nextSched = schedule[currentIdx + 1];
+      const secsToNext = Math.round((nextSched.arrive - nowMins) * 60);
+      if (secsToNext > 0) {
+        const mm = Math.floor(secsToNext / 60), ss = secsToNext % 60;
+        timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+        timerEl.style.color = '#ff9944';
+        labelEl.textContent = '🚇 Traveling → #' + nextSched.stop + ' ' + PUBS[currentIdx + 1].name + ' · arrive ' + fmtTime(nextSched.arrive);
+      } else {
+        // Late getting to next pub
+        const overSecs = Math.abs(secsToNext);
+        timerEl.textContent = '-' + String(Math.floor(overSecs / 60)).padStart(2,'0') + ':' + String(overSecs % 60).padStart(2,'0');
+        timerEl.style.color = '#ff4444';
+        labelEl.textContent = '⚠️ Late to #' + nextSched.stop + ' ' + PUBS[currentIdx + 1].name + '! Keep moving';
+      }
+      return;
+    }
+
     // Use actual check-in time if available, else scheduled arrive time
     const actualArrival = checkinTimes[cur.stop] !== undefined ? checkinTimes[cur.stop] : cur.arrive;
     const actualLeave = actualArrival + _minsPerPub;
@@ -1465,19 +1581,17 @@ function startCountdown(schedule, minsPerPub) {
       : diffMins > 1  ? ' · 🐢 ' + diffMins + 'm late'
       : '';
 
-    banner.style.display = 'block';
-
     // 10-min warning
     if (secsLeft >= 599 && secsLeft <= 601) {
       fire10MinWarning(PUBS[currentIdx].name);
     }
     if (secsLeft < 0) {
-      // Overdue — should have left already
-      const overdueMin = Math.round(-secsLeft / 60);
+      // Overdue at pub — fire leave nudge (only if not yet completed)
       if (secsLeft >= -61 && secsLeft < 0) fireLeaveNotification(PUBS[currentIdx].name, currentIdx < 26 ? PUBS[currentIdx+1].station : 'the finish');
+      const overdueMin = Math.round(-secsLeft / 60);
       timerEl.textContent = '-' + String(Math.floor(Math.abs(secsLeft) / 60)).padStart(2,'0') + ':' + String(Math.abs(secsLeft) % 60).padStart(2,'0');
       timerEl.style.color = '#ff4444';
-      labelEl.textContent = '⚠️ ' + overdueMin + 'm overdue! Head to ' + PUBS[currentIdx].station + ' now';
+      labelEl.textContent = '⚠️ ' + overdueMin + 'm overdue! Tap to complete stop #' + cur.stop;
     } else {
       const mm = Math.floor(secsLeft / 60), ss = secsLeft % 60;
       timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;

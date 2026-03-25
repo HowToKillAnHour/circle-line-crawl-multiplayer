@@ -8,7 +8,7 @@
 <style>
   :root {
     --yellow:#FFD329; --dark:#0A0A0A; --mid:#141414; --card:#1C1C1C;
-    --border:#2A2A2A; --text:#F0EDE6; --muted:#666; --red:#E3173E; --green:#00B36B; --blue:#1E6FBA;
+    --border:#2A2A2A; --text:#F0EDE6; --muted:#666; --red:#E3173E; --green:#00B36B; --blue:#1E6FBA; --orange:#FF8C00;
     --yellow-dim:rgba(255,211,41,0.12);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -62,6 +62,11 @@
   .pubs-grid{display:flex;flex-direction:column;gap:1px;background:var(--border);}
   .pub-row{background:var(--card);display:flex;align-items:center;gap:14px;padding:16px 16px;cursor:pointer;transition:background 0.15s;user-select:none;position:relative;}
   .pub-row.done{background:#111;border-left:3px solid #333 !important;opacity:0.45;}
+  .pub-row.at-pub{background:#160900;border-left:3px solid var(--orange) !important;}
+  .pub-row.at-pub .stop-num{background:var(--orange);color:#000;}
+  .pub-row.at-pub .circle-dot{background:var(--orange);}
+  .pub-row.at-pub .check-icon{background:transparent;border-color:var(--orange);opacity:0.9;}
+  .pub-row.at-pub .pub-name{color:var(--orange);}
   .pub-row:active{background:#1a1a1a;}
   .stop-num{width:34px;height:34px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;flex-shrink:0;transition:all 0.25s;}
   .pub-row.done .stop-num{background:#222;color:#444;font-size:13px;}
@@ -258,7 +263,7 @@
     <button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
       START THE CRAWL 🍺
     </button>
-    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v0.0.1</strong></div>
+    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v0.0.0.0.0</strong></div>
 
   </div>
 </div>
@@ -428,14 +433,17 @@
   </div>
 </div>
 
-<!-- ══ PHOTO CONFIRM MODAL ══ -->
-<div class="pw-modal" id="photoConfirmModal">
-  <div class="pw-box">
-    <div id="photoConfirmTitle" class="pw-title"></div>
-    <div class="pw-sub">Did you take a photo at this pub?</div>
-    <button class="pw-submit" onclick="photoConfirmYes()" style="margin-bottom:8px;">Yes, check in ✅</button>
-    <button class="pw-submit" onclick="photoConfirmNo()" style="background:var(--border);color:var(--text);margin-bottom:8px;">No, take a photo first 📷</button>
-    <button class="pw-cancel" onclick="closePhotoConfirm()">Cancel</button>
+<!-- ══ COMPLETE PUB BOTTOM SHEET ══ -->
+<div class="modal-overlay" id="completeModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">DONE HERE?</div>
+    <div class="modal-pub-name" id="completePubName"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+      <button class="pw-submit" onclick="completeWithPhoto()">📷 Take photo first</button>
+      <button class="pw-submit" onclick="completeSkipPhoto()" style="background:var(--border);color:var(--text);">✓ Skip &amp; complete</button>
+      <button class="pw-cancel" onclick="closeCompleteModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -484,11 +492,13 @@ async function fbRead() {
     if (!data) return;
     // Only skip if the data hasn't meaningfully changed (checkins + visited)
     const photoCount = data.pubPhotos ? Object.values(data.pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0) : 0;
-    const str = JSON.stringify({ v: data.visited, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub, tm: data.travelMode, pc: photoCount });
+    const str = JSON.stringify({ v: data.visited, ap: data.arrivedPubs, ct: data.checkinTimes, st: data.appStartTime, mp: data.appMinsPerPub, sp: data.appStartPub, tm: data.travelMode, pc: photoCount });
     if (str === lastFbData) return;
     lastFbData = str;
     const remoteVisited = Array.isArray(data.visited) ? data.visited.map(Number) : (data.visited ? Object.values(data.visited).map(Number) : []);
     visited = new Set(remoteVisited);
+    const remoteArrived = Array.isArray(data.arrivedPubs) ? data.arrivedPubs.map(Number) : (data.arrivedPubs ? Object.values(data.arrivedPubs).map(Number) : []);
+    arrivedPubs = new Set(remoteArrived);
     checkinTimes = data.checkinTimes || checkinTimes;
     if (data.appStartTime) appStartTime = data.appStartTime;
     if (data.appMinsPerPub) appMinsPerPub = data.appMinsPerPub;
@@ -526,10 +536,10 @@ let fbSaving = false;
 async function fbSave() {
   fbSaving = true;
   try {
-    const body = JSON.stringify({ visited: [...visited], pubPhotos, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
+    const body = JSON.stringify({ visited: [...visited], arrivedPubs: [...arrivedPubs], pubPhotos, checkinTimes, appStartTime, appMinsPerPub, appStartPub, travelMode });
     // Update skip-check with same fields fbRead uses
     const savePhotoCount = Object.values(pubPhotos).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
-    lastFbData = JSON.stringify({ v: [...visited], ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub, tm: travelMode, pc: savePhotoCount });
+    lastFbData = JSON.stringify({ v: [...visited], ap: [...arrivedPubs], ct: checkinTimes, st: appStartTime, mp: appMinsPerPub, sp: appStartPub, tm: travelMode, pc: savePhotoCount });
     const res = await fetch(FB_URL, { method: 'PUT', headers: {'Content-Type':'application/json'}, body });
     if (!res.ok) { console.warn('FB save failed', res.status); showToast('⚠️ Sync failed — retrying'); setTimeout(fbSave, 2000); }
   } catch(e) { console.warn('FB save error', e); showToast('⚠️ No connection'); }
@@ -538,6 +548,7 @@ async function fbSave() {
 
 function saveLocal() {
   localStorage.setItem('clp_visited',  JSON.stringify([...visited]));
+  localStorage.setItem('clp_arrived',  JSON.stringify([...arrivedPubs]));
   localStorage.setItem('clp_checkinTimes', JSON.stringify(checkinTimes));
   try { localStorage.setItem('clp_photos', JSON.stringify(pubPhotos)); } catch(e) {}
 }
@@ -643,6 +654,7 @@ const SURVIVAL = [
 
 // ── STATE ── always fresh — Firebase is source of truth
 let visited      = new Set();
+let arrivedPubs  = new Set(); // at pub but not yet completed
 let pubPhotos    = {};
 let adminUnlocked = false;
 let modalStop = null;
@@ -711,32 +723,59 @@ function getSchedule() {
   return schedule;
 }
 
+function arriveAtPub(stop) {
+  if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
+  const stopNum = Number(stop);
+  arrivedPubs.add(stopNum);
+  checkinTimes[stopNum] = getNowInMinutes();
+  // Clear travel mode — we've arrived
+  travelMode = false;
+  travelStartTime = null;
+  travelFromStop = null;
+  // Set start time to earliest checkin
+  const earliest = Math.min(...Object.values(checkinTimes));
+  const startEl = document.getElementById('startTime');
+  if (startEl) startEl.value = fmtTime(earliest);
+  showToast('🕐 Timer started — tap again when done');
+  const row = document.getElementById('pub-' + stopNum);
+  if (row) row.classList.add('just-done');
+  save();
+  calcPace();
+}
+
 function toggleCheckin(stop) {
   if (!adminUnlocked) { showToast('🔒 Only admin can check in pubs'); return; }
   const stopNum = Number(stop);
   const isDone = visited.has(stopNum);
   if (!isDone) {
-    // CHECK IN
+    // COMPLETE — mark visited and kick off travel
     visited.add(stopNum);
-    checkinTimes[stopNum] = getNowInMinutes();
-    // Clear travel mode — we've arrived at the next pub
-    travelMode = false;
-    travelStartTime = null;
-    travelFromStop = null;
-    // Set start time to earliest checkin
-    const earliest = Math.min(...Object.values(checkinTimes));
-    const startEl = document.getElementById('startTime');
-    if (startEl) startEl.value = fmtTime(earliest);
-    showToast('🍺 Stop #' + stopNum + ' checked in!');
+    // Backdate check-in so travel timer starts from now
+    checkinTimes[stopNum] = getNowInMinutes() - appMinsPerPub;
+    // Auto-start travel mode to next pub
+    if (stopNum < 27) {
+      travelMode = true;
+      travelFromStop = stopNum;
+      const pub = PUBS.find(p => p.stop === stopNum);
+      const nextPub = PUBS.find(p => p.stop === stopNum + 1);
+      if (pub && nextPub) fireLeaveNotification(pub.name, nextPub.name, nextPub.station, nextPub.stop);
+      showToast('✅ Done at #' + stopNum + '! Head to ' + nextPub.name);
+    } else {
+      showToast('🎉 Final pub done! Crawl complete!');
+    }
   } else {
     // UNDO — remove from all state
     visited.delete(stopNum);
+    arrivedPubs.delete(stopNum);
     delete checkinTimes[stopNum];
     if (Object.keys(checkinTimes).length === 0) {
       appStartTime = '10:00';
       const startEl = document.getElementById('startTime');
       if (startEl) startEl.value = '10:00';
     }
+    travelMode = false;
+    travelStartTime = null;
+    travelFromStop = null;
     showToast('↩️ Stop #' + stopNum + ' unchecked');
   }
   const row = document.getElementById('pub-' + stop);
@@ -755,12 +794,13 @@ function renderTracker() {
   orderedPubs.forEach((pub, idx) => {
     const displayStop = idx + 1;
     const globalDone = visited.has(pub.stop);
+    const atPub = !globalDone && arrivedPubs.has(pub.stop);
     const photos = pubPhotos[pub.stop] || [];
     const row = document.createElement('div');
     // Find the next uncompleted pub in display order
     const lastDoneIdx = orderedPubs.reduce((best, p, i) => visited.has(p.stop) ? i : best, -1);
-    const isNextTarget = !globalDone && idx === lastDoneIdx + 1;
-    row.className = 'pub-row' + (globalDone ? ' done' : isNextTarget ? ' next-target' : ' future');
+    const isNextTarget = !globalDone && !atPub && idx === lastDoneIdx + 1;
+    row.className = 'pub-row' + (globalDone ? ' done' : atPub ? ' at-pub' : isNextTarget ? ' next-target' : ' future');
     row.id = 'pub-' + pub.stop;
     const thumb = photos.length ? '<img class="pub-thumb" src="' + photos[photos.length-1] + '" alt="pint">' : '';
     const sched = schedule[pub.stop - 1];
@@ -776,7 +816,7 @@ function renderTracker() {
         snapNudge +
       '</div>' +
       thumb +
-      '<div class="check-icon">🍺</div>' +
+      '<div class="check-icon">' + (atPub ? '🕐' : '🍺') + '</div>' +
       '<button class="cam-btn" title="Add photo">📷</button>' +
       '<button class="map-btn" title="Open in Maps">📍</button>';
     row.querySelector('.map-btn').addEventListener('click', e => { e.stopPropagation(); openMap(pub.q); });
@@ -785,11 +825,12 @@ function renderTracker() {
     if (nudgeEl) nudgeEl.addEventListener('click', e => { e.stopPropagation(); openRowCam(pub.stop); });
     row.addEventListener('click', () => {
       if (!adminUnlocked) { showToast('🔒 Admin checks in pubs'); return; }
-      const alreadyDone = visited.has(pub.stop);
-      if (!alreadyDone) {
-        showPhotoConfirm(pub.stop);
+      if (visited.has(pub.stop)) {
+        toggleCheckin(pub.stop); // undo completed pub
+      } else if (arrivedPubs.has(pub.stop)) {
+        showCompleteModal(pub.stop); // second tap: bottom sheet → complete
       } else {
-        toggleCheckin(pub.stop); // undo — no photo prompt needed
+        arriveAtPub(pub.stop); // first tap: start timer
       }
     });
     grid.appendChild(row);
@@ -1179,10 +1220,10 @@ function fire10MinWarning(pubName) {
   });
 }
 
-function fireLeaveNotification(pubName, nextPubName) {
+function fireLeaveNotification(pubName, nextPubName, nextStation, nextStop) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  new Notification('🚇 Time to leave! ' + pubName, {
-    body: 'Head to ' + nextPubName + ' now',
+  new Notification('🚇 Time to travel! Leave ' + pubName + ' → head to ' + (nextStation || nextPubName) + ' · stop #' + nextStop, {
+    body: 'Next: ' + nextPubName,
     icon: '',
     tag: 'leave-now',
     renotify: true
@@ -1216,31 +1257,31 @@ function submitPassword() {
 
 function closePwModal() { document.getElementById('pwModal').classList.remove('open'); }
 
-// ── PHOTO CONFIRM (admin check-in) ──
-function showPhotoConfirm(stop) {
+// ── COMPLETE PUB BOTTOM SHEET ──
+let completeModalStop = null;
+
+function showCompleteModal(stop) {
   const pub = PUBS.find(p => p.stop === stop);
-  photoConfirmStop = stop;
-  document.getElementById('photoConfirmTitle').textContent = '#' + stop + ' ' + pub.name;
-  document.getElementById('photoConfirmModal').classList.add('open');
+  completeModalStop = stop;
+  document.getElementById('completePubName').textContent = pub.name;
+  document.getElementById('completeModal').classList.add('open');
 }
 
-function closePhotoConfirm() {
-  document.getElementById('photoConfirmModal').classList.remove('open');
-  photoConfirmStop = null;
+function closeCompleteModal() {
+  document.getElementById('completeModal').classList.remove('open');
+  completeModalStop = null;
 }
 
-function photoConfirmYes() {
-  const stop = photoConfirmStop;
-  closePhotoConfirm();
-  if (stop !== null) toggleCheckin(stop);
+function completeWithPhoto() {
+  const stop = completeModalStop;
+  closeCompleteModal();
+  if (stop !== null) { pendingPhotoCheckin = stop; openRowCam(stop); }
 }
 
-function photoConfirmNo() {
-  const stop = photoConfirmStop;
-  closePhotoConfirm();
-  if (stop === null) return;
-  pendingPhotoCheckin = stop;
-  openRowCam(stop);
+function completeSkipPhoto() {
+  const stop = completeModalStop;
+  closeCompleteModal();
+  if (stop !== null && !visited.has(stop)) toggleCheckin(stop);
 }
 
 // ── PACE ──
@@ -1276,7 +1317,6 @@ const TRAVEL_MINS = [
   10, // 26 South Kensington -> 27 Sloane Square
 ];
 
-let photoConfirmStop = null;
 let pendingPhotoCheckin = null;
 
 let countdownInterval = null;
@@ -1448,17 +1488,17 @@ function startCountdown(schedule, minsPerPub) {
 
     // ── STATE 2: Travelling to next pub ──
     if ((secsUntilLeave <= 0 || travelMode) && secsUntilArrival > 0 && nextPub) {
-      banner.style.background = 'rgba(255,211,41,0.12)';
-      banner.style.borderTop = '1px solid rgba(255,211,41,0.5)';
+      banner.style.background = 'rgba(255,140,0,0.12)';
+      banner.style.borderTop = '1px solid rgba(255,140,0,0.5)';
       document.getElementById('countdownHeaderLabel').textContent = 'TRAVEL TO NEXT PUB NOW';
       const mm = Math.floor(secsUntilArrival / 60), ss = secsUntilArrival % 60;
       timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
-      timerEl.style.color = 'var(--yellow)';
+      timerEl.style.color = 'var(--orange)';
       labelEl.textContent = '🚇 Head to ' + nextPub.name;
       // Fire leave notification once per stop
       if (leaveNotifiedStop !== cur.stop) {
         leaveNotifiedStop = cur.stop;
-        fireLeaveNotification(PUBS[currentIdx].name, nextPub.name);
+        fireLeaveNotification(PUBS[currentIdx].name, nextPub.name, nextPub.station, nextPub.stop);
       }
       return;
     }

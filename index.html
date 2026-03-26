@@ -1511,7 +1511,7 @@ function startCountdown(schedule, minsPerPub) {
 
   function tick() {
     // ── STATE 0: Not started ──
-    if (visited.size === 0) {
+    if (visited.size === 0 && arrivedPubs.size === 0) {
       banner.style.background = 'rgba(255,211,41,0.1)';
       banner.style.borderTop = '1px solid rgba(255,211,41,0.4)';
       document.getElementById('countdownHeaderLabel').textContent = 'CRAWL STATUS';
@@ -1528,7 +1528,33 @@ function startCountdown(schedule, minsPerPub) {
     for (let i = 0; i < 27; i++) {
       if (visited.has(i + 1)) currentIdx = i;
     }
-    if (currentIdx === -1) return;
+
+    // ── AT FIRST PUB: arrived but no pubs completed yet — show pub timer directly ──
+    if (currentIdx === -1) {
+      for (let i = 0; i < 27; i++) {
+        if (arrivedPubs.has(i + 1)) { currentIdx = i; break; }
+      }
+      if (currentIdx === -1) return;
+      const cur = schedule[currentIdx];
+      const actualArrival = checkinTimes[cur.stop] !== undefined ? checkinTimes[cur.stop] : cur.arrive;
+      const actualLeave = actualArrival + _minsPerPub;
+      const secsUntilLeave = Math.round((actualLeave - nowMins) * 60);
+      banner.style.background = 'rgba(0,179,107,0.12)';
+      banner.style.borderTop = '1px solid rgba(0,179,107,0.5)';
+      document.getElementById('countdownHeaderLabel').textContent = 'LEAVE CURRENT PUB IN';
+      if (secsUntilLeave <= 0) {
+        const overdueMin = Math.round(-secsUntilLeave / 60);
+        timerEl.textContent = '-' + String(Math.floor(Math.abs(secsUntilLeave) / 60)).padStart(2,'0') + ':' + String(Math.abs(secsUntilLeave) % 60).padStart(2,'0');
+        timerEl.style.color = '#ff4444';
+        labelEl.textContent = '⚠️ ' + overdueMin + 'm overdue! Leave ' + PUBS[currentIdx].name + ' now!';
+      } else {
+        const mm = Math.floor(secsUntilLeave / 60), ss = secsUntilLeave % 60;
+        timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+        timerEl.style.color = 'var(--green)';
+        labelEl.textContent = 'At ' + PUBS[currentIdx].name + ' → leave by ' + fmtTime(actualLeave);
+      }
+      return;
+    }
 
     const cur = schedule[currentIdx];
     const nextPubIdx = currentIdx + 1;

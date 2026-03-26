@@ -263,7 +263,7 @@
     <button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
       START THE CRAWL 🍺
     </button>
-    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v0.0.0.0.0</strong></div>
+    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v1.0</strong></div>
 
   </div>
 </div>
@@ -399,7 +399,7 @@
   </div>
 </div>
 
-<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><strong style="font-size:11px;opacity:0.6;letter-spacing:2px;">v0.0.1</strong></footer>
+<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><strong style="font-size:11px;opacity:0.6;letter-spacing:2px;">v1.0</strong></footer>
 <div class="toast" id="toast"></div>
 
 <!-- ══ CHECK-IN MODAL ══ -->
@@ -437,12 +437,26 @@
 <div class="modal-overlay" id="completeModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">DONE HERE?</div>
+    <div class="modal-title">HEADING OFF?</div>
     <div class="modal-pub-name" id="completePubName"></div>
+    <div style="font-size:15px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5;">Travel timer is running.<br>Want to snap a pint photo first?</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-      <button class="pw-submit" onclick="completeWithPhoto()">📷 Take photo first</button>
-      <button class="pw-submit" onclick="completeSkipPhoto()" style="background:var(--border);color:var(--text);">✓ Skip &amp; complete</button>
-      <button class="pw-cancel" onclick="closeCompleteModal()">Cancel</button>
+      <button class="pw-submit" onclick="completeWithPhoto()">📷 Take photo</button>
+      <button class="pw-submit" onclick="completeSkipPhoto()" style="background:var(--border);color:var(--text);">Let's go!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ START CRAWL MODAL ══ -->
+<div class="modal-overlay" id="startCrawlModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">FIRST PUB</div>
+    <div class="modal-pub-name" id="startCrawlPubName"></div>
+    <div style="font-size:15px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5;">Ready to kick off the crawl?<br>The pub timer will start now.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="pw-submit" onclick="confirmStartCrawl()">🍺 Start Pub Crawl Now</button>
+      <button class="pw-cancel" onclick="closeStartCrawlModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -764,19 +778,38 @@ function toggleCheckin(stop) {
       showToast('🎉 Final pub done! Crawl complete!');
     }
   } else {
-    // UNDO — remove from all state
-    visited.delete(stopNum);
-    arrivedPubs.delete(stopNum);
-    delete checkinTimes[stopNum];
-    if (Object.keys(checkinTimes).length === 0) {
+    // UNDO — check if this is the first pub; if so, reset the whole crawl
+    const spEl = document.getElementById('startPub');
+    const startPubNum = (spEl && spEl.value) ? parseInt(spEl.value) || 1 : appStartPub;
+    const orderedPubs = [...PUBS.slice(startPubNum - 1), ...PUBS.slice(0, startPubNum - 1)];
+    const isFirstPub = orderedPubs[0].stop === stopNum;
+
+    if (isFirstPub) {
+      // Reset entire crawl
+      visited.clear();
+      arrivedPubs.clear();
+      Object.keys(checkinTimes).forEach(k => delete checkinTimes[k]);
       appStartTime = '10:00';
+      travelMode = false;
+      travelStartTime = null;
+      travelFromStop = null;
       const startEl = document.getElementById('startTime');
       if (startEl) startEl.value = '10:00';
+      showToast('↩️ Crawl reset — tap first pub to start again');
+    } else {
+      visited.delete(stopNum);
+      arrivedPubs.delete(stopNum);
+      delete checkinTimes[stopNum];
+      if (Object.keys(checkinTimes).length === 0) {
+        appStartTime = '10:00';
+        const startEl = document.getElementById('startTime');
+        if (startEl) startEl.value = '10:00';
+      }
+      travelMode = false;
+      travelStartTime = null;
+      travelFromStop = null;
+      showToast('↩️ Stop #' + stopNum + ' unchecked');
     }
-    travelMode = false;
-    travelStartTime = null;
-    travelFromStop = null;
-    showToast('↩️ Stop #' + stopNum + ' unchecked');
   }
   const row = document.getElementById('pub-' + stop);
   if (row) row.classList.add('just-done');
@@ -828,9 +861,16 @@ function renderTracker() {
       if (visited.has(pub.stop)) {
         toggleCheckin(pub.stop); // undo completed pub
       } else if (arrivedPubs.has(pub.stop)) {
-        showCompleteModal(pub.stop); // second tap: bottom sheet → complete
+        // Second tap: immediately start travel, then ask for photo
+        toggleCheckin(pub.stop);
+        showCompleteModal(pub.stop);
       } else {
-        arriveAtPub(pub.stop); // first tap: start timer
+        // First tap: if this is the very first pub of the crawl, show start screen
+        if (isFirstCrawlPub(pub.stop)) {
+          showStartCrawlModal(pub.stop);
+        } else {
+          arriveAtPub(pub.stop);
+        }
       }
     });
     grid.appendChild(row);
@@ -1275,13 +1315,41 @@ function closeCompleteModal() {
 function completeWithPhoto() {
   const stop = completeModalStop;
   closeCompleteModal();
-  if (stop !== null) { pendingPhotoCheckin = stop; openRowCam(stop); }
+  if (stop !== null) openRowCam(stop); // toggleCheckin already called, just open camera
 }
 
 function completeSkipPhoto() {
-  const stop = completeModalStop;
-  closeCompleteModal();
-  if (stop !== null && !visited.has(stop)) toggleCheckin(stop);
+  closeCompleteModal(); // toggleCheckin already called on second tap
+}
+
+// ── START CRAWL MODAL ──
+let startCrawlPubStop = null;
+
+function isFirstCrawlPub(stop) {
+  // True only if this is the first pub in display order AND the crawl hasn't started yet
+  if (Object.keys(checkinTimes).length > 0) return false;
+  const spEl = document.getElementById('startPub');
+  const startPubNum = (spEl && spEl.value) ? parseInt(spEl.value) || 1 : appStartPub;
+  const orderedPubs = [...PUBS.slice(startPubNum - 1), ...PUBS.slice(0, startPubNum - 1)];
+  return orderedPubs[0].stop === stop;
+}
+
+function showStartCrawlModal(stop) {
+  const pub = PUBS.find(p => p.stop === stop);
+  startCrawlPubStop = stop;
+  document.getElementById('startCrawlPubName').textContent = pub.name;
+  document.getElementById('startCrawlModal').classList.add('open');
+}
+
+function closeStartCrawlModal() {
+  document.getElementById('startCrawlModal').classList.remove('open');
+  startCrawlPubStop = null;
+}
+
+function confirmStartCrawl() {
+  const stop = startCrawlPubStop;
+  closeStartCrawlModal();
+  if (stop !== null) arriveAtPub(stop);
 }
 
 // ── PACE ──

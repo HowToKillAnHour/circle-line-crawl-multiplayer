@@ -263,7 +263,7 @@
     <button onclick="startApp()" style="width:100%;font-size:22px;font-weight:900;padding:22px;background:var(--yellow);color:var(--dark);border:none;border-radius:14px;cursor:pointer;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">
       START THE CRAWL 🍺
     </button>
-    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v6.9</strong></div>
+    <div style="text-align:center;margin-top:12px;"><strong style="font-size:12px;color:var(--muted);letter-spacing:2px;font-family:'DM Mono',monospace;">v12.23</strong></div>
 
   </div>
 </div>
@@ -294,6 +294,7 @@
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:1px;" id="countdownHeaderLabel">LEAVE CURRENT PUB IN</div>
       <div id="countdownTimer" style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:var(--yellow);letter-spacing:3px;line-height:1.1;">--:--</div>
       <div id="countdownLabel" style="font-size:11px;color:var(--muted);margin-top:1px;"></div>
+      <button id="wereHereBtn" style="display:none;margin-top:8px;background:var(--orange);color:#000;border:none;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;letter-spacing:1px;padding:7px 20px;cursor:pointer;">📍 WE'RE HERE!</button>
     </div>
     <div id="trackerPaceSummary" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);text-align:center;padding:5px 16px;border-bottom:1px solid var(--border);"></div>
     <div class="survival-banner" style="margin-bottom:0;border-radius:0;border-left:3px solid var(--yellow);border-right:none;border-top:none;border-bottom:none;padding:8px 16px;font-size:14px;">Status: <span id="survivalText">Not started yet… get to the pub! 🍺</span></div>
@@ -399,7 +400,7 @@
   </div>
 </div>
 
-<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><strong style="font-size:11px;opacity:0.6;letter-spacing:2px;">v6.9</strong></footer>
+<footer>🍺 Drink responsibly · 27 stops · Circle Line<br><strong style="font-size:11px;opacity:0.6;letter-spacing:2px;">v12.23</strong></footer>
 <div class="toast" id="toast"></div>
 
 <!-- ══ CHECK-IN MODAL ══ -->
@@ -1539,6 +1540,8 @@ function startCountdown(schedule, minsPerPub) {
       const actualArrival = checkinTimes[cur.stop] !== undefined ? checkinTimes[cur.stop] : cur.arrive;
       const actualLeave = actualArrival + _minsPerPub;
       const secsUntilLeave = Math.round((actualLeave - nowMins) * 60);
+      const wereHereBtnEarly = document.getElementById('wereHereBtn');
+      if (wereHereBtnEarly) wereHereBtnEarly.style.display = 'none';
       banner.style.background = 'rgba(0,179,107,0.12)';
       banner.style.borderTop = '1px solid rgba(0,179,107,0.5)';
       document.getElementById('countdownHeaderLabel').textContent = 'LEAVE CURRENT PUB IN';
@@ -1568,6 +1571,8 @@ function startCountdown(schedule, minsPerPub) {
     const travelEndMins = actualLeave + travelMins;
     const secsUntilArrival = Math.round((travelEndMins - nowMins) * 60);
 
+    const wereHereBtn = document.getElementById('wereHereBtn');
+
     // ── STATE 3: All done ──
     if (currentIdx === 26) {
       banner.style.background = 'rgba(255,211,41,0.1)';
@@ -1576,6 +1581,7 @@ function startCountdown(schedule, minsPerPub) {
       timerEl.textContent = '🏆';
       timerEl.style.color = 'var(--yellow)';
       labelEl.textContent = 'All 27 pubs done! Absolute legends.';
+      if (wereHereBtn) wereHereBtn.style.display = 'none';
       clearInterval(countdownInterval);
       return;
     }
@@ -1589,6 +1595,19 @@ function startCountdown(schedule, minsPerPub) {
       timerEl.textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
       timerEl.style.color = 'var(--orange)';
       labelEl.textContent = '🚇 Head to ' + nextPub.name;
+      // Show "We're here!" button for admin when travelling
+      if (wereHereBtn) {
+        if (adminUnlocked) {
+          wereHereBtn.style.display = 'inline-block';
+          wereHereBtn.onclick = () => {
+            const minsEarly = Math.round(secsUntilArrival / 60);
+            arriveAtPub(nextPub.stop);
+            showToast('🏃 ' + minsEarly + ' min' + (minsEarly !== 1 ? 's' : '') + ' early — smashing it! 🔥');
+          };
+        } else {
+          wereHereBtn.style.display = 'none';
+        }
+      }
       // Fire leave notification once per stop
       if (leaveNotifiedStop !== cur.stop) {
         leaveNotifiedStop = cur.stop;
@@ -1607,6 +1626,7 @@ function startCountdown(schedule, minsPerPub) {
       timerEl.textContent = '+' + (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
       timerEl.style.color = 'var(--red)';
       labelEl.textContent = '⚠️ Should be at ' + nextPub.name + ' by now!';
+      if (wereHereBtn) wereHereBtn.style.display = 'none';
       // Fire late notification once per stop
       if (lateNotifiedStop !== cur.stop) {
         lateNotifiedStop = cur.stop;
@@ -1616,6 +1636,7 @@ function startCountdown(schedule, minsPerPub) {
     }
 
     // ── STATE 1: At the pub — countdown to leave ──
+    if (wereHereBtn) wereHereBtn.style.display = 'none';
     banner.style.background = 'rgba(0,179,107,0.12)';
     banner.style.borderTop = '1px solid rgba(0,179,107,0.5)';
     document.getElementById('countdownHeaderLabel').textContent = 'LEAVE CURRENT PUB IN';
